@@ -1,40 +1,28 @@
 let rawData = [];
 let filteredData = [];
 
-// Instâncias dos gráficos
-let chartEvolucao = null;
 let chartTopDuplicados = null;
 let chartDonutProporcao = null;
 
-// Função de extração exata do Part Number para dados Tetra Pak
 function extractPartNumber(text) {
   if (!text || typeof text !== 'string') return "N/A";
-  
   const cleaned = text.replace(/\b(TETRA PAK|ALFA LAVAL)\b/gi, '').trim();
   const tokens = cleaned.split(/\s+/);
   const digitTokens = tokens.filter(t => /\d/.test(t));
-  
-  if (digitTokens.length > 0) {
-    return digitTokens.join(" ");
-  }
-  
-  return "N/A";
+  return digitTokens.length > 0 ? digitTokens.join(" ") : "N/A";
 }
 
-// Inicialização automática ao carregar a página
-window.addEventListener('DOMContentLoaded', () => {
-  // Carrega mock/base inicial ou aguarda o arquivo
-  initEventListeners();
-});
+document.addEventListener("DOMContentLoaded", () => {
+  const fileInput = document.getElementById('excelFileInput');
+  if (fileInput) {
+    fileInput.addEventListener('change', handleFileUpload);
+  }
 
-function initEventListeners() {
-  document.getElementById('excelFileInput').addEventListener('change', handleFileUpload);
   document.getElementById('searchInput').addEventListener('input', applyFilters);
   document.getElementById('filterComprador').addEventListener('change', applyFilters);
-  document.getElementById('filterGrupo').addEventListener('change', applyFilters);
   document.getElementById('filterDuplicidade').addEventListener('change', applyFilters);
   document.getElementById('filterDivergente').addEventListener('change', applyFilters);
-}
+});
 
 function handleFileUpload(e) {
   const file = e.target.files[0];
@@ -56,29 +44,21 @@ function handleFileUpload(e) {
 }
 
 function processDataset(json) {
-  // Prepara registros
   const parsed = json.map(row => {
     const textoBreve = String(row['Texto breve'] || row['Coluna1'] || '');
     const pn = extractPartNumber(textoBreve);
     let dtValidade = row['Fim da validade'];
-    
-    if (dtValidade && !(dtValidade instanceof Date)) {
-      dtValidade = new Date(dtValidade);
-    }
 
     return {
       material: row['Material'] || 'N/A',
       textoBreve: textoBreve,
       partNumber: pn,
       comprador: row['Grupo de compradores'] || 'N/A',
-      grupo: row['Grupo de compradores'] || 'N/A',
       preco: parseFloat(row['Preço líquido']) || 0,
-      validade: dtValidade && !isNaN(dtValidade) ? dtValidade.toISOString().split('T')[0] : 'N/A',
-      mesValidade: dtValidade && !isNaN(dtValidade) ? dtValidade.toISOString().substring(0, 7) : 'Sem Data'
+      validade: dtValidade ? String(dtValidade).substring(0, 10) : 'N/A'
     };
   });
 
-  // Mapeia frequência e variação de preço
   const pnFreqMap = {};
   const pnPricesMap = {};
 
@@ -97,6 +77,8 @@ function processDataset(json) {
   }));
 
   populateFilterDropdowns();
+  
+  document.getElementById('mainContent').classList.remove('hidden');
   applyFilters();
 }
 
@@ -138,42 +120,19 @@ function applyFilters() {
 }
 
 function updateDashboardUI() {
-  // Atualiza rótulo de quantidade
   document.getElementById('filteredCountLabel').innerText = `${filteredData.length.toLocaleString('pt-BR')} de ${rawData.length.toLocaleString('pt-BR')} itens`;
 
-  // Cálculos de KPIs
   const totalItens = filteredData.length;
-  const pnsUnicosSet = new Set(filteredData.filter(d => d.partNumber !== 'N/A').map(d => d.partNumber));
-  const pnsUnicos = pnsUnicosSet.size;
-
+  const pnsUnicos = new Set(filteredData.filter(d => d.partNumber !== 'N/A').map(d => d.partNumber)).size;
   const duplicadosList = filteredData.filter(d => d.frequencia > 1 && d.partNumber !== 'N/A');
   const pnsDuplicadosUnicos = new Set(duplicadosList.map(d => d.partNumber)).size;
-  const naoIdentificados = filteredData.filter(d => d.partNumber === 'N/A').length;
-
-  // Maior repetição
-  let maxRep = 1;
-  let maxPNs = [];
-  filteredData.forEach(d => {
-    if (d.frequencia > maxRep) {
-      maxRep = d.frequencia;
-      maxPNs = [d.partNumber];
-    } else if (d.frequencia === maxRep && maxRep > 1 && !maxPNs.includes(d.partNumber)) {
-      maxPNs.push(d.partNumber);
-    }
-  });
-
   const divergencias = new Set(filteredData.filter(d => d.temDivergenciaPreco).map(d => d.partNumber)).size;
 
-  // Atualiza Elementos no DOM
   document.getElementById('kpiTotalItens').innerText = `${totalItens.toLocaleString('pt-BR')} ITENS`;
   document.getElementById('kpiTotalSub').innerText = `${totalItens.toLocaleString('pt-BR')} itens solicitados`;
   document.getElementById('kpiUnicos').innerText = `${pnsUnicos.toLocaleString('pt-BR')} PNs`;
   document.getElementById('kpiDuplicados').innerText = `${pnsDuplicadosUnicos.toLocaleString('pt-BR')} PNs`;
   document.getElementById('kpiDuplicadosSub').innerText = `Representam ${duplicadosList.length.toLocaleString('pt-BR')} itens`;
-  document.getElementById('kpiNaoIdentificados').innerText = `${naoIdentificados} item${naoIdentificados !== 1 ? 's' : ''}`;
-
-  document.getElementById('kpiMaxRepeticao').innerText = maxRep > 1 ? `${maxRep} VEZES` : 'NENHUMA';
-  document.getElementById('kpiMaxRepeticaoPNs').innerText = maxPNs.length > 0 ? `PNs: ${maxPNs.slice(0, 2).join(', ')}` : 'Sem duplicidade';
   document.getElementById('kpiDivergencias').innerText = `${divergencias} PNs`;
 
   renderCharts();
@@ -181,50 +140,6 @@ function updateDashboardUI() {
 }
 
 function renderCharts() {
-  // 1. Gráfico de Evolução Temporal (Linha Suave com Área Sombreada)
-  const mesMap = {};
-  filteredData.forEach(d => {
-    if (d.mesValidade !== 'Sem Data') {
-      mesMap[d.mesValidade] = (mesMap[d.mesValidade] || 0) + 1;
-    }
-  });
-  const mesLabels = Object.keys(mesMap).sort();
-  const mesValues = mesLabels.map(m => mesMap[m]);
-
-  if (chartEvolucao) chartEvolucao.destroy();
-  const ctxEvolucao = document.getElementById('chartEvolucao').getContext('2d');
-  
-  const gradient = ctxEvolucao.createLinearGradient(0, 0, 0, 200);
-  gradient.addColorStop(0, 'rgba(16, 185, 129, 0.4)');
-  gradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
-
-  chartEvolucao = new Chart(ctxEvolucao, {
-    type: 'line',
-    data: {
-      labels: mesLabels.length > 0 ? mesLabels : ['2026-06', '2026-07', '2026-08', '2026-09'],
-      datasets: [{
-        label: 'Itens a Vencer',
-        data: mesValues.length > 0 ? mesValues : [40, 90, 270, 10],
-        borderColor: '#10b981',
-        backgroundColor: gradient,
-        fill: true,
-        tension: 0.4,
-        borderWidth: 2,
-        pointBackgroundColor: '#f59e0b'
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { color: '#1f293d' }, ticks: { color: '#94a3b8', font: { size: 10 } } },
-        y: { grid: { color: '#1f293d' }, ticks: { color: '#94a3b8', font: { size: 10 } } }
-      }
-    }
-  });
-
-  // 2. Gráfico Top 10 PNs Duplicados (Barras)
   const dupMap = {};
   filteredData.forEach(d => {
     if (d.frequencia > 1 && d.partNumber !== 'N/A') {
@@ -240,10 +155,9 @@ function renderCharts() {
   chartTopDuplicados = new Chart(ctxDup, {
     type: 'bar',
     data: {
-      labels: dupLabels.length > 0 ? dupLabels : ['PN 3728601', 'PN 2961956', 'PN 6596244', 'PN 9051099'],
+      labels: dupLabels,
       datasets: [{
-        label: 'Ocorrências',
-        data: dupValues.length > 0 ? dupValues : [3, 3, 2, 2],
+        data: dupValues,
         backgroundColor: '#10b981',
         borderRadius: 4
       }]
@@ -253,13 +167,12 @@ function renderCharts() {
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 }, maxRotation: 45 } },
-        y: { grid: { color: '#1f293d' }, ticks: { color: '#94a3b8', font: { size: 10 }, stepSize: 1 } }
+        x: { ticks: { color: '#94a3b8', font: { size: 9 } } },
+        y: { ticks: { color: '#94a3b8', stepSize: 1 } }
       }
     }
   });
 
-  // 3. Gráfico Donut de Proporção
   const unicosCount = filteredData.filter(d => d.frequencia === 1).length;
   const dup2Count = filteredData.filter(d => d.frequencia === 2).length;
   const dup3Count = filteredData.filter(d => d.frequencia >= 3).length;
@@ -279,12 +192,7 @@ function renderCharts() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: { color: '#94a3b8', font: { size: 11 } }
-        }
-      },
+      plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } },
       cutout: '70%'
     }
   });
@@ -315,5 +223,5 @@ function renderTable() {
     tbody.appendChild(tr);
   });
 
-  document.getElementById('tableStatus').innerText = `Mostrando ${displayRows.length.toLocaleString('pt-BR')} de ${filteredData.length.toLocaleString('pt-BR')} itens`;
+  document.getElementById('tableStatus').innerText = `Exibindo ${displayRows.length.toLocaleString('pt-BR')} de ${filteredData.length.toLocaleString('pt-BR')} itens`;
 }
