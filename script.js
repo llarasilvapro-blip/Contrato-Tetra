@@ -3,8 +3,9 @@ let filteredData = [];
 
 let chartTopDuplicados = null;
 let chartDonutProporcao = null;
+let chartCompradores = null;
+let chartFreqDistribucao = null;
 
-// Extrai especificamente sequências numéricas (códigos de peça / PNs)
 function extractPartNumber(text) {
   if (!text || typeof text !== 'string') return "N/A";
   const cleaned = text.replace(/\b(TETRA PAK|ALFA LAVAL)\b/gi, '').trim();
@@ -53,12 +54,11 @@ function processDataset(json) {
       material: row['Material'] || 'N/A',
       textoBreve: textoBreve,
       partNumber: pn,
-      comprador: row['Grupo de compradores'] || 'N/A',
+      comprador: String(row['Grupo de compradores'] || 'N/A').trim(),
       validade: dtValidade ? String(dtValidade).substring(0, 10) : 'N/A'
     };
   });
 
-  // Mapeia a frequência/quantidade exata de vezes que cada PN aparece no contrato
   const pnFreqMap = {};
   parsed.forEach(item => {
     if (item.partNumber !== 'N/A') {
@@ -72,8 +72,6 @@ function processDataset(json) {
   }));
 
   populateFilterDropdowns();
-  
-  document.getElementById('mainContent').classList.remove('hidden');
   applyFilters();
 }
 
@@ -118,7 +116,6 @@ function updateDashboardUI() {
   const duplicadosList = filteredData.filter(d => d.frequencia > 1 && d.partNumber !== 'N/A');
   const pnsDuplicadosUnicos = new Set(duplicadosList.map(d => d.partNumber)).size;
 
-  // Calcula a maior repetição
   let maxRep = 0;
   let maxPNs = [];
   filteredData.forEach(d => {
@@ -144,7 +141,7 @@ function updateDashboardUI() {
 }
 
 function renderCharts() {
-  // 1. Gráfico de Barras - Top 10 PNs Repetidos
+  // 1. Top 10 PNs Repetidos
   const dupMap = {};
   filteredData.forEach(d => {
     if (d.frequencia > 1 && d.partNumber !== 'N/A') {
@@ -152,54 +149,83 @@ function renderCharts() {
     }
   });
   const sortedDups = Object.entries(dupMap).sort((a, b) => b[1] - a[1]).slice(0, 10);
-  const dupLabels = sortedDups.map(d => d[0]);
-  const dupValues = sortedDups.map(d => d[1]);
 
   if (chartTopDuplicados) chartTopDuplicados.destroy();
-  const ctxDup = document.getElementById('chartTopDuplicados').getContext('2d');
-  chartTopDuplicados = new Chart(ctxDup, {
+  chartTopDuplicados = new Chart(document.getElementById('chartTopDuplicados').getContext('2d'), {
     type: 'bar',
     data: {
-      labels: dupLabels,
-      datasets: [{
-        data: dupValues,
-        backgroundColor: '#10b981',
-        borderRadius: 4
-      }]
+      labels: sortedDups.map(d => d[0]),
+      datasets: [{ data: sortedDups.map(d => d[1]), backgroundColor: '#10b981', borderRadius: 4 }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { color: '#94a3b8', font: { size: 9 } } },
-        y: { ticks: { color: '#94a3b8', stepSize: 1 } }
-      }
+      scales: { x: { ticks: { color: '#94a3b8', font: { size: 9 } } }, y: { ticks: { color: '#94a3b8', stepSize: 1 } } }
     }
   });
 
-  // 2. Gráfico Donut de Proporção de Repetição
+  // 2. Donut Proporção de Duplicidade
   const unicosCount = filteredData.filter(d => d.frequencia === 1).length;
   const dup2Count = filteredData.filter(d => d.frequencia === 2).length;
   const dup3Count = filteredData.filter(d => d.frequencia >= 3).length;
 
   if (chartDonutProporcao) chartDonutProporcao.destroy();
-  const ctxDonut = document.getElementById('chartDonutProporcao').getContext('2d');
-  chartDonutProporcao = new Chart(ctxDonut, {
+  chartDonutProporcao = new Chart(document.getElementById('chartDonutProporcao').getContext('2d'), {
     type: 'doughnut',
     data: {
       labels: ['Únicos (1x)', 'Duplicados (2x)', 'Triplicados ou + (3x+)'],
-      datasets: [{
-        data: [unicosCount, dup2Count, dup3Count],
-        backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
-        borderWidth: 0
-      }]
+      datasets: [{ data: [unicosCount, dup2Count, dup3Count], backgroundColor: ['#10b981', '#f59e0b', '#ef4444'], borderWidth: 0 }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } },
-      cutout: '70%'
+      cutout: '65%'
+    }
+  });
+
+  // 3. NOVO: Volume por Grupo de Compradores
+  const compMap = {};
+  filteredData.forEach(d => { compMap[d.comprador] = (compMap[d.comprador] || 0) + 1; });
+  const sortedComps = Object.entries(compMap).sort((a, b) => b[1] - a[1]).slice(0, 8);
+
+  if (chartCompradores) chartCompradores.destroy();
+  chartCompradores = new Chart(document.getElementById('chartCompradores').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: sortedComps.map(c => c[0]),
+      datasets: [{ data: sortedComps.map(c => c[1]), backgroundColor: '#3b82f6', borderRadius: 4 }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { ticks: { color: '#94a3b8', font: { size: 9 } } }, y: { ticks: { color: '#94a3b8' } } }
+    }
+  });
+
+  // 4. NOVO: Distribuição de Frequências (Histograma de repetição)
+  const freqDist = { '1 Ocorrência': 0, '2 Ocorrências': 0, '3 Ocorrências': 0, '4+ Ocorrências': 0 };
+  filteredData.forEach(d => {
+    if (d.frequencia === 1) freqDist['1 Ocorrência']++;
+    else if (d.frequencia === 2) freqDist['2 Ocorrências']++;
+    else if (d.frequencia === 3) freqDist['3 Ocorrências']++;
+    else freqDist['4+ Ocorrências']++;
+  });
+
+  if (chartFreqDistribucao) chartFreqDistribucao.destroy();
+  chartFreqDistribucao = new Chart(document.getElementById('chartFreqDistribucao').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: Object.keys(freqDist),
+      datasets: [{ data: Object.values(freqDist), backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6'], borderRadius: 4 }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { ticks: { color: '#94a3b8', font: { size: 10 } } }, y: { ticks: { color: '#94a3b8' } } }
     }
   });
 }
@@ -223,6 +249,7 @@ function renderTable() {
       <td class="p-3 font-sans text-xs text-slate-200">${item.textoBreve}</td>
       <td class="p-3 font-mono text-xs font-bold text-emeraldAccent">${item.partNumber}</td>
       <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] ${badgeColor}">${item.frequencia}x no contrato</span></td>
+      <td class="p-3 text-xs text-slate-300">${item.comprador}</td>
       <td class="p-3 text-xs text-slate-400">${item.validade}</td>
     `;
     tbody.appendChild(tr);
