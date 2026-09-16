@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PROCUREMENT - Dashboard Tetra Pak</title>
+  <title>PROCUREMENT - Análise de Part Numbers em Contrato</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -35,8 +35,8 @@
   <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-cardBg p-5 rounded-xl border border-cardBorder shadow-lg">
     <div>
       <span class="text-xs font-bold text-emeraldAccent tracking-wider uppercase">PROCUREMENT - ANÁLISE DE CONTRATOS</span>
-      <h1 class="text-2xl font-extrabold text-white mt-0.5">Dashboard de Materiais Tetra Pak</h1>
-      <p class="text-xs text-slate-400 mt-1" id="fileInfoLabel">Selecione o arquivo Excel para carregar a análise</p>
+      <h1 class="text-2xl font-extrabold text-white mt-0.5">Contagem & Frequência de Part Numbers</h1>
+      <p class="text-xs text-slate-400 mt-1" id="fileInfoLabel">Carregue sua planilha (.xlsx) para analisar a quantidade de repetições por Part Number</p>
     </div>
     <div>
       <label class="cursor-pointer bg-emeraldAccent hover:bg-emerald-600 text-slate-950 font-bold px-4 py-2.5 rounded-lg shadow-md transition inline-flex items-center gap-2 text-sm">
@@ -46,32 +46,24 @@
     </div>
   </header>
 
-  <!-- PAINEL PRINCIPAL (Oculto até enviar o arquivo) -->
+  <!-- PAINEL PRINCIPAL (Exibido após upload da planilha) -->
   <div id="mainContent" class="space-y-5 hidden">
     
     <!-- BARRA DE FILTROS -->
-    <div class="bg-cardBg p-4 rounded-xl border border-cardBorder grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-center text-xs">
+    <div class="bg-cardBg p-4 rounded-xl border border-cardBorder grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 items-center text-xs">
       <div>
-        <label class="text-slate-400 mb-1 block">Comprador</label>
+        <label class="text-slate-400 mb-1 block">Comprador / Grupo</label>
         <select id="filterComprador" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-emeraldAccent focus:outline-none">
           <option value="ALL">Todos os Compradores</option>
         </select>
       </div>
       <div>
-        <label class="text-slate-400 mb-1 block">Status de Duplicidade</label>
+        <label class="text-slate-400 mb-1 block">Status de Frequência</label>
         <select id="filterDuplicidade" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-emeraldAccent focus:outline-none">
-          <option value="ALL">Todos</option>
-          <option value="UNICOS">Apenas Únicos (1x)</option>
-          <option value="DUPLICADOS">Apenas Duplicados (2x)</option>
-          <option value="TRIPLICADOS">Apenas Triplicados (3x+)</option>
-        </select>
-      </div>
-      <div>
-        <label class="text-slate-400 mb-1 block">Preço Divergente</label>
-        <select id="filterDivergente" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-emeraldAccent focus:outline-none">
-          <option value="ALL">Todos</option>
-          <option value="SIM">Sim (Preço Diferente para mesmo PN)</option>
-          <option value="NAO">Não</option>
+          <option value="ALL">Todos os Itens</option>
+          <option value="UNICOS">Apenas Únicos (No contrato 1x)</option>
+          <option value="DUPLICADOS">Duplicados (No contrato 2x)</option>
+          <option value="TRIPLICADOS">Triplicados ou + (No contrato 3x+)</option>
         </select>
       </div>
       <div class="text-right pt-2 md:pt-0">
@@ -79,30 +71,30 @@
       </div>
     </div>
 
-    <!-- KPI CARDS -->
+    <!-- KPI CARDS - FOCO EXCLUSIVO EM REPETIÇÃO E PART NUMBERS -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <div class="bg-cardBg p-4 rounded-xl border border-cardBorder">
-        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">TOTAL DE ITENS NO CONTRATO</p>
+        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">TOTAL DE LINHAS NO CONTRATO</p>
         <h2 id="kpiTotalItens" class="text-3xl font-black text-emeraldAccent mt-1">0 ITENS</h2>
-        <p id="kpiTotalSub" class="text-[11px] text-slate-500 mt-1">0 itens solicitados</p>
+        <p id="kpiTotalSub" class="text-[11px] text-slate-500 mt-1">Itens totais mapeados</p>
       </div>
 
       <div class="bg-cardBg p-4 rounded-xl border border-cardBorder">
         <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">PART NUMBERS ÚNICOS</p>
         <h2 id="kpiUnicos" class="text-3xl font-black text-amberAccent mt-1">0 PNs</h2>
-        <p class="text-[11px] text-slate-500 mt-1">Diferentes códigos de peça</p>
+        <p class="text-[11px] text-slate-500 mt-1">Códigos de peças distintos</p>
       </div>
 
       <div class="bg-cardBg p-4 rounded-xl border border-cardBorder">
-        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">ITENS DUPLICADOS / TRIPLICADOS</p>
+        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">PNs REPETIDOS (2x ou +)</p>
         <h2 id="kpiDuplicados" class="text-3xl font-black text-redAccent mt-1">0 PNs</h2>
-        <p id="kpiDuplicadosSub" class="text-[11px] text-slate-500 mt-1">Representam 0 itens</p>
+        <p id="kpiDuplicadosSub" class="text-[11px] text-slate-500 mt-1">Total de 0 itens duplicados</p>
       </div>
 
       <div class="bg-cardBg p-4 rounded-xl border border-cardBorder">
-        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">DIVERGÊNCIA DE PREÇO</p>
-        <h2 id="kpiDivergencias" class="text-3xl font-black text-slate-200 mt-1">0 PNs</h2>
-        <p class="text-[11px] text-slate-500 mt-1">Preços distintos para o mesmo PN</p>
+        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">MÁXIMA OCORRÊNCIA</p>
+        <h2 id="kpiMaxRepeticao" class="text-3xl font-black text-slate-200 mt-1">0 VEZES</h2>
+        <p id="kpiMaxRepeticaoPNs" class="text-[11px] text-slate-500 mt-1">Maior número de repetições</p>
       </div>
     </div>
 
@@ -110,7 +102,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div class="bg-cardBg p-5 rounded-xl border border-cardBorder">
         <div class="text-center mb-2">
-          <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider">TOP 10 PNs REPETIDOS</h3>
+          <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider">TOP 10 PART NUMBERS MAIS REPETIDOS</h3>
         </div>
         <div class="h-56">
           <canvas id="chartTopDuplicados"></canvas>
@@ -119,7 +111,7 @@
 
       <div class="bg-cardBg p-5 rounded-xl border border-cardBorder">
         <div class="text-center mb-2">
-          <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider">PROPORÇÃO DE DUPLICIDADE</h3>
+          <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider">PROPORÇÃO DE OCORRÊNCIAS EM CONTRATO</h3>
         </div>
         <div class="h-56 flex justify-center">
           <canvas id="chartDonutProporcao"></canvas>
@@ -127,11 +119,11 @@
       </div>
     </div>
 
-    <!-- TABELA -->
+    <!-- TABELA DE PART NUMBERS E FREQUÊNCIA -->
     <div class="bg-cardBg rounded-xl border border-cardBorder overflow-hidden">
       <div class="p-4 border-b border-cardBorder flex flex-col md:flex-row gap-3 justify-between items-center">
         <div class="relative w-full md:w-96">
-          <input type="text" id="searchInput" placeholder="🔍 Buscar por Part Number, Texto Breve ou Material..." 
+          <input type="text" id="searchInput" placeholder="🔍 Buscar por Part Number ou Texto Breve..." 
                  class="w-full bg-slate-900 border border-slate-700 text-slate-200 px-3 py-2 text-xs rounded-lg focus:ring-1 focus:ring-emeraldAccent focus:outline-none">
         </div>
         <div class="text-xs text-slate-400" id="tableStatus">Exibindo registros</div>
@@ -144,8 +136,7 @@
               <th class="p-3">Material</th>
               <th class="p-3">Texto Breve</th>
               <th class="p-3 text-emeraldAccent">Part Number Extraído</th>
-              <th class="p-3">Ocorrências</th>
-              <th class="p-3">Preço Líquido</th>
+              <th class="p-3">Ocorrências no Contrato</th>
               <th class="p-3">Validade</th>
             </tr>
           </thead>
