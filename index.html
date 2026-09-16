@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PROCUREMENT - Dashboard de Contrato & Part Number</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN (Para os gráficos) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- SheetJS CDN (Para leitura do Excel no navegador) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            darkBg: '#090d16',
+            cardBg: '#111827',
+            cardBorder: '#1f293d',
+            emeraldAccent: '#10b981',
+            amberAccent: '#f59e0b',
+            redAccent: '#ef4444',
+            purpleAccent: '#a855f7'
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-darkBg text-slate-100 min-h-screen font-sans p-4 md:p-6 space-y-5">
+
+  <!-- CABEÇALHO -->
+  <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-cardBg p-5 rounded-xl border border-cardBorder shadow-lg">
+    <div>
+      <span class="text-xs font-bold text-emeraldAccent tracking-wider uppercase">PROCUREMENT - ANÁLISE DE CONTRATOS</span>
+      <h1 class="text-2xl font-extrabold text-white mt-0.5">Dashboard de Materiais Tetra Pak</h1>
+      <p class="text-xs text-slate-400 mt-1" id="fileInfoLabel">Base real (itens em contrato tetra-31.03.xlsx - 6.448 itens)</p>
+    </div>
+    <div>
+      <label class="cursor-pointer bg-emeraldAccent hover:bg-emerald-600 text-slate-950 font-bold px-4 py-2.5 rounded-lg shadow-md transition inline-flex items-center gap-2 text-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+        <span>Atualizar base (.xlsx)</span>
+        <input type="file" id="excelFileInput" accept=".xlsx, .xls" class="hidden">
+      </label>
+    </div>
+  </header>
+
+  <!-- BARRA DE FILTROS -->
+  <div class="bg-cardBg p-4 rounded-xl border border-cardBorder grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 items-center text-xs">
+    <div>
+      <label class="text-slate-400 mb-1 block">Comprador</label>
+      <select id="filterComprador" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-emeraldAccent focus:outline-none">
+        <option value="ALL">Todos os Compradores</option>
+      </select>
+    </div>
+    <div>
+      <label class="text-slate-400 mb-1 block">Grupo de Compras</label>
+      <select id="filterGrupo" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-emeraldAccent focus:outline-none">
+        <option value="ALL">Todos os Grupos</option>
+      </select>
+    </div>
+    <div>
+      <label class="text-slate-400 mb-1 block">Status de Duplicidade</label>
+      <select id="filterDuplicidade" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-emeraldAccent focus:outline-none">
+        <option value="ALL">Todos</option>
+        <option value="UNICOS">Apenas Únicos (1x)</option>
+        <option value="DUPLICADOS">Apenas Duplicados (2x)</option>
+        <option value="TRIPLICADOS">Apenas Triplicados (3x+)</option>
+      </select>
+    </div>
+    <div>
+      <label class="text-slate-400 mb-1 block">Preço Divergente</label>
+      <select id="filterDivergente" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-emeraldAccent focus:outline-none">
+        <option value="ALL">Todos</option>
+        <option value="SIM">Sim (Preço Diferente para mesmo PN)</option>
+        <option value="NAO">Não</option>
+      </select>
+    </div>
+    <div class="text-right sm:col-span-2 md:col-span-1 pt-2 md:pt-0">
+      <span id="filteredCountLabel" class="text-slate-400 text-xs font-mono">6.448 de 6.448 itens</span>
+    </div>
+  </div>
+
+  <!-- KPI CARDS - PRIMEIRA LINHA -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-cardBg p-4 rounded-xl border border-cardBorder">
+      <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">TOTAL DE ITENS NO CONTRATO</p>
+      <h2 id="kpiTotalItens" class="text-3xl font-black text-emeraldAccent mt-1">6.448 ITENS</h2>
+      <p id="kpiTotalSub" class="text-[11px] text-slate-500 mt-1">6.448 itens solicitados</p>
+    </div>
+
+    <div class="bg-cardBg p-4 rounded-xl border border-cardBorder">
+      <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">PART NUMBERS ÚNICOS</p>
+      <h2 id="kpiUnicos" class="text-3xl font-black text-amberAccent mt-1">6.376 PNs</h2>
+      <p class="text-[11px] text-slate-500 mt-1">Diferentes códigos de peça</p>
+    </div>
+
+    <div class="bg-cardBg p-4 rounded-xl border border-cardBorder">
+      <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">ITENS DUPLICADOS / TRIPLICADOS</p>
+      <h2 id="kpiDuplicados" class="text-3xl font-black text-redAccent mt-1">72 PNs</h2>
+      <p id="kpiDuplicadosSub" class="text-[11px] text-slate-500 mt-1">Representam 148 itens</p>
+    </div>
+
+    <div class="bg-cardBg p-4 rounded-xl border border-cardBorder">
+      <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">NÃO IDENTIFICADOS (N/A)</p>
+      <h2 id="kpiNaoIdentificados" class="text-3xl font-black text-slate-200 mt-1">1 item</h2>
+      <p class="text-[11px] text-slate-500 mt-1">Item sem número no texto breve</p>
+    </div>
+  </div>
+
+  <!-- KPI CARDS - SEGUNDA LINHA -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="bg-cardBg p-4 rounded-xl border border-cardBorder flex justify-between items-center">
+      <div>
+        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">MÁXIMA REPETIÇÃO</p>
+        <h2 id="kpiMaxRepeticao" class="text-2xl font-extrabold text-amberAccent mt-1">3 VEZES</h2>
+        <p id="kpiMaxRepeticaoPNs" class="text-[11px] text-slate-500 mt-0.5">PNs '3728601-0101' e '29619560000'</p>
+      </div>
+      <div class="text-3xl">🔁</div>
+    </div>
+
+    <div class="bg-cardBg p-4 rounded-xl border border-cardBorder flex justify-between items-center">
+      <div>
+        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">DIVERGÊNCIA DE PREÇO</p>
+        <h2 id="kpiDivergencias" class="text-2xl font-extrabold text-redAccent mt-1">8 PNs</h2>
+        <p class="text-[11px] text-slate-500 mt-0.5">Diferentes preços para o mesmo Part Number</p>
+      </div>
+      <div class="text-3xl">⚠️</div>
+    </div>
+  </div>
+
+  <!-- LINHA DE GRÁFICOS: EVOLUÇÃO TEMPORAL -->
+  <div class="bg-cardBg p-5 rounded-xl border border-cardBorder">
+    <div class="text-center mb-2">
+      <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider">EVOLUÇÃO TEMPORAL (VALIDADE)</h3>
+      <p class="text-xs text-slate-500">Itens com vencimento por mês de contrato</p>
+    </div>
+    <div class="h-64">
+      <canvas id="chartEvolucao"></canvas>
+    </div>
+  </div>
+
+  <!-- LINHA DE GRÁFICOS: BARRAS DUPLICADOS & DONUT CHART -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="bg-cardBg p-5 rounded-xl border border-cardBorder">
+      <div class="text-center mb-2">
+        <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider">TOP 10 PNs REPETIDOS</h3>
+        <p class="text-xs text-slate-500">Número de ocorrências dos itens mais duplicados</p>
+      </div>
+      <div class="h-56">
+        <canvas id="chartTopDuplicados"></canvas>
+      </div>
+    </div>
+
+    <div class="bg-cardBg p-5 rounded-xl border border-cardBorder">
+      <div class="text-center mb-2">
+        <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider">PROPORÇÃO DE DUPLICIDADE</h3>
+        <p class="text-xs text-slate-500">Distribuição entre Únicos, Duplicados e Triplicados</p>
+      </div>
+      <div class="h-56 flex justify-center">
+        <canvas id="chartDonutProporcao"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- CAMPO DE BUSCA E TABELA DE MATERIAIS -->
+  <div class="bg-cardBg rounded-xl border border-cardBorder overflow-hidden">
+    <div class="p-4 border-b border-cardBorder flex flex-col md:flex-row gap-3 justify-between items-center">
+      <div class="relative w-full md:w-96">
+        <input type="text" id="searchInput" placeholder="🔍 Buscar por Part Number, Texto Breve ou Material..." 
+               class="w-full bg-slate-900 border border-slate-700 text-slate-200 px-3 py-2 text-xs rounded-lg focus:ring-1 focus:ring-emeraldAccent focus:outline-none">
+      </div>
+      <div class="text-xs text-slate-400" id="tableStatus">
+        Mostrando os primeiros resultados
+      </div>
+    </div>
+
+    <div class="overflow-x-auto max-h-[450px]">
+      <table class="w-full text-left text-xs text-slate-300">
+        <thead class="bg-slate-900/90 text-slate-400 uppercase font-semibold sticky top-0 border-b border-cardBorder">
+          <tr>
+            <th class="p-3">Material</th>
+            <th class="p-3">Texto Breve</th>
+            <th class="p-3 text-emeraldAccent">Part Number Extraído</th>
+            <th class="p-3">Ocorrências</th>
+            <th class="p-3">Preço Líquido</th>
+            <th class="p-3">Validade</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody" class="divide-y divide-cardBorder/50 font-mono">
+          <!-- Linhas injetadas via JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
