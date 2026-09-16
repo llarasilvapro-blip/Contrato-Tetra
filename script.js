@@ -4,6 +4,7 @@ let filteredData = [];
 let chartTopDuplicados = null;
 let chartDonutProporcao = null;
 
+// Extrai especificamente sequências numéricas (códigos de peça / PNs)
 function extractPartNumber(text) {
   if (!text || typeof text !== 'string') return "N/A";
   const cleaned = text.replace(/\b(TETRA PAK|ALFA LAVAL)\b/gi, '').trim();
@@ -21,14 +22,13 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById('searchInput').addEventListener('input', applyFilters);
   document.getElementById('filterComprador').addEventListener('change', applyFilters);
   document.getElementById('filterDuplicidade').addEventListener('change', applyFilters);
-  document.getElementById('filterDivergente').addEventListener('change', applyFilters);
 });
 
 function handleFileUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
 
-  document.getElementById('fileInfoLabel').innerText = `Base real (${file.name})`;
+  document.getElementById('fileInfoLabel').innerText = `Base carregada: (${file.name})`;
 
   const reader = new FileReader();
   reader.onload = function (evt) {
@@ -54,26 +54,21 @@ function processDataset(json) {
       textoBreve: textoBreve,
       partNumber: pn,
       comprador: row['Grupo de compradores'] || 'N/A',
-      preco: parseFloat(row['Preço líquido']) || 0,
       validade: dtValidade ? String(dtValidade).substring(0, 10) : 'N/A'
     };
   });
 
+  // Mapeia a frequência/quantidade exata de vezes que cada PN aparece no contrato
   const pnFreqMap = {};
-  const pnPricesMap = {};
-
   parsed.forEach(item => {
     if (item.partNumber !== 'N/A') {
       pnFreqMap[item.partNumber] = (pnFreqMap[item.partNumber] || 0) + 1;
-      if (!pnPricesMap[item.partNumber]) pnPricesMap[item.partNumber] = new Set();
-      pnPricesMap[item.partNumber].add(item.preco);
     }
   });
 
   rawData = parsed.map(item => ({
     ...item,
-    frequencia: pnFreqMap[item.partNumber] || 1,
-    temDivergenciaPreco: pnPricesMap[item.partNumber] ? pnPricesMap[item.partNumber].size > 1 : false
+    frequencia: pnFreqMap[item.partNumber] || 1
   }));
 
   populateFilterDropdowns();
@@ -95,7 +90,6 @@ function applyFilters() {
   const searchTerm = document.getElementById('searchInput').value.toLowerCase();
   const comprador = document.getElementById('filterComprador').value;
   const duplicidade = document.getElementById('filterDuplicidade').value;
-  const divergente = document.getElementById('filterDivergente').value;
 
   filteredData = rawData.filter(item => {
     const matchSearch = item.textoBreve.toLowerCase().includes(searchTerm) ||
@@ -109,11 +103,7 @@ function applyFilters() {
     if (duplicidade === 'DUPLICADOS') matchDup = item.frequencia === 2;
     if (duplicidade === 'TRIPLICADOS') matchDup = item.frequencia >= 3;
 
-    let matchDiv = true;
-    if (divergente === 'SIM') matchDiv = item.temDivergenciaPreco === true;
-    if (divergente === 'NAO') matchDiv = item.temDivergenciaPreco === false;
-
-    return matchSearch && matchComp && matchDup && matchDiv;
+    return matchSearch && matchComp && matchDup;
   });
 
   updateDashboardUI();
@@ -124,22 +114,37 @@ function updateDashboardUI() {
 
   const totalItens = filteredData.length;
   const pnsUnicos = new Set(filteredData.filter(d => d.partNumber !== 'N/A').map(d => d.partNumber)).size;
+  
   const duplicadosList = filteredData.filter(d => d.frequencia > 1 && d.partNumber !== 'N/A');
   const pnsDuplicadosUnicos = new Set(duplicadosList.map(d => d.partNumber)).size;
-  const divergencias = new Set(filteredData.filter(d => d.temDivergenciaPreco).map(d => d.partNumber)).size;
+
+  // Calcula a maior repetição
+  let maxRep = 0;
+  let maxPNs = [];
+  filteredData.forEach(d => {
+    if (d.frequencia > maxRep) {
+      maxRep = d.frequencia;
+      maxPNs = [d.partNumber];
+    } else if (d.frequencia === maxRep && maxRep > 1 && !maxPNs.includes(d.partNumber)) {
+      maxPNs.push(d.partNumber);
+    }
+  });
 
   document.getElementById('kpiTotalItens').innerText = `${totalItens.toLocaleString('pt-BR')} ITENS`;
-  document.getElementById('kpiTotalSub').innerText = `${totalItens.toLocaleString('pt-BR')} itens solicitados`;
+  document.getElementById('kpiTotalSub').innerText = `${totalItens.toLocaleString('pt-BR')} linhas solicitadas`;
   document.getElementById('kpiUnicos').innerText = `${pnsUnicos.toLocaleString('pt-BR')} PNs`;
   document.getElementById('kpiDuplicados').innerText = `${pnsDuplicadosUnicos.toLocaleString('pt-BR')} PNs`;
-  document.getElementById('kpiDuplicadosSub').innerText = `Representam ${duplicadosList.length.toLocaleString('pt-BR')} itens`;
-  document.getElementById('kpiDivergencias').innerText = `${divergencias} PNs`;
+  document.getElementById('kpiDuplicadosSub').innerText = `Representam ${duplicadosList.length.toLocaleString('pt-BR')} linhas`;
+  
+  document.getElementById('kpiMaxRepeticao').innerText = maxRep > 1 ? `${maxRep} VEZES` : '1 VEZ';
+  document.getElementById('kpiMaxRepeticaoPNs').innerText = maxPNs.length > 0 ? `PNs: ${maxPNs.slice(0, 2).join(', ')}` : 'Sem repetições';
 
   renderCharts();
   renderTable();
 }
 
 function renderCharts() {
+  // 1. Gráfico de Barras - Top 10 PNs Repetidos
   const dupMap = {};
   filteredData.forEach(d => {
     if (d.frequencia > 1 && d.partNumber !== 'N/A') {
@@ -173,6 +178,7 @@ function renderCharts() {
     }
   });
 
+  // 2. Gráfico Donut de Proporção de Repetição
   const unicosCount = filteredData.filter(d => d.frequencia === 1).length;
   const dup2Count = filteredData.filter(d => d.frequencia === 2).length;
   const dup3Count = filteredData.filter(d => d.frequencia >= 3).length;
@@ -182,7 +188,7 @@ function renderCharts() {
   chartDonutProporcao = new Chart(ctxDonut, {
     type: 'doughnut',
     data: {
-      labels: ['Únicos (1x)', 'Duplicados (2x)', 'Triplicados (3x+)'],
+      labels: ['Únicos (1x)', 'Duplicados (2x)', 'Triplicados ou + (3x+)'],
       datasets: [{
         data: [unicosCount, dup2Count, dup3Count],
         backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
@@ -216,8 +222,7 @@ function renderTable() {
       <td class="p-3 font-mono text-[11px] text-slate-400">${item.material}</td>
       <td class="p-3 font-sans text-xs text-slate-200">${item.textoBreve}</td>
       <td class="p-3 font-mono text-xs font-bold text-emeraldAccent">${item.partNumber}</td>
-      <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] ${badgeColor}">${item.frequencia}x</span></td>
-      <td class="p-3 text-xs text-slate-200">${item.preco ? item.preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00'}</td>
+      <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] ${badgeColor}">${item.frequencia}x no contrato</span></td>
       <td class="p-3 text-xs text-slate-400">${item.validade}</td>
     `;
     tbody.appendChild(tr);
