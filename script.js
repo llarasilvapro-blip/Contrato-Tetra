@@ -6,6 +6,32 @@ let chartDonutProporcao = null;
 let chartValidade = null;
 let chartFreqDistribucao = null;
 
+// Converte datas seriais do Excel (ex: 46234) para DD/MM/AAAA
+function formatExcelDate(excelDate) {
+  if (!excelDate || excelDate === 'N/A') return 'N/A';
+  
+  if (typeof excelDate === 'string' && (excelDate.includes('/') || excelDate.includes('-'))) {
+    const d = new Date(excelDate);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString('pt-BR');
+    }
+    return excelDate;
+  }
+
+  const num = Number(excelDate);
+  if (!isNaN(num) && num > 0) {
+    const dateObj = XLSX.SSF.parse_date_code(num);
+    if (dateObj) {
+      const day = String(dateObj.d).padStart(2, '0');
+      const month = String(dateObj.m).padStart(2, '0');
+      const year = dateObj.y;
+      return `${day}/${month}/${year}`;
+    }
+  }
+
+  return String(excelDate);
+}
+
 function extractPartNumber(text) {
   if (!text || typeof text !== 'string') return "N/A";
   const cleaned = text.replace(/\b(TETRA PAK|ALFA LAVAL)\b/gi, '').trim();
@@ -21,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   document.getElementById('searchInput').addEventListener('input', applyFilters);
-  document.getElementById('filterCPP').addEventListener('change', applyFilters);
+  document.getElementById('searchCPP').addEventListener('input', applyFilters);
   document.getElementById('filterComprador').addEventListener('change', applyFilters);
   document.getElementById('filterDuplicidade').addEventListener('change', applyFilters);
 });
@@ -49,15 +75,17 @@ function processDataset(json) {
   const parsed = json.map(row => {
     const textoBreve = String(row['Texto breve'] || row['Coluna1'] || '');
     const pn = extractPartNumber(textoBreve);
-    let dtValidade = row['Fim da validade'];
+    
+    const rawCPP = row['CPP'] || row['Centro'] || row['Plant'] || row['Centro de Custo'] || row['Centro Lucro'] || 'N/A';
+    const rawValidade = row['Fim da validade'] || row['Validade'] || row['Fim Validade'] || 'N/A';
 
     return {
       material: row['Material'] || 'N/A',
-      cpp: String(row['CPP'] || row['Centro'] || row['Plant'] || 'N/A').trim(),
+      cpp: String(rawCPP).trim(),
       textoBreve: textoBreve,
       partNumber: pn,
       comprador: String(row['Grupo de compradores'] || 'N/A').trim(),
-      validade: dtValidade ? String(dtValidade).substring(0, 10) : 'N/A'
+      validade: formatExcelDate(rawValidade)
     };
   });
 
@@ -78,26 +106,17 @@ function processDataset(json) {
 }
 
 function populateFilterDropdowns() {
-  // Popula Compradores
   const compradores = [...new Set(rawData.map(d => d.comprador))].sort();
   const compSelect = document.getElementById('filterComprador');
   compSelect.innerHTML = '<option value="ALL">Todos os Compradores</option>';
   compradores.forEach(c => {
     compSelect.innerHTML += `<option value="${c}">${c}</option>`;
   });
-
-  // Popula CPP
-  const cpps = [...new Set(rawData.map(d => d.cpp))].sort();
-  const cppSelect = document.getElementById('filterCPP');
-  cppSelect.innerHTML = '<option value="ALL">Todos os CPPs</option>';
-  cpps.forEach(cpp => {
-    cppSelect.innerHTML += `<option value="${cpp}">CPP: ${cpp}</option>`;
-  });
 }
 
 function applyFilters() {
   const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-  const cppVal = document.getElementById('filterCPP').value;
+  const cppSearchTerm = document.getElementById('searchCPP').value.toLowerCase();
   const comprador = document.getElementById('filterComprador').value;
   const duplicidade = document.getElementById('filterDuplicidade').value;
 
@@ -106,7 +125,7 @@ function applyFilters() {
                         item.partNumber.toLowerCase().includes(searchTerm) ||
                         String(item.material).toLowerCase().includes(searchTerm);
 
-    const matchCPP = cppVal === 'ALL' || item.cpp === cppVal;
+    const matchCPP = item.cpp.toLowerCase().includes(cppSearchTerm);
     const matchComp = comprador === 'ALL' || item.comprador === comprador;
 
     let matchDup = true;
@@ -154,7 +173,7 @@ function updateDashboardUI() {
 }
 
 function renderCharts() {
-  // 1. Top 10 PNs Repetidos
+  // 1. Top 10 PNs
   const dupMap = {};
   filteredData.forEach(d => {
     if (d.frequencia > 1 && d.partNumber !== 'N/A') {
@@ -178,7 +197,7 @@ function renderCharts() {
     }
   });
 
-  // 2. Proporção de Ocorrências
+  // 2. Proporção
   const unicosCount = filteredData.filter(d => d.frequencia === 1).length;
   const dup2Count = filteredData.filter(d => d.frequencia === 2).length;
   const dup3Count = filteredData.filter(d => d.frequencia >= 3).length;
@@ -198,10 +217,10 @@ function renderCharts() {
     }
   });
 
-  // 3. Status de Validade dos Contratos (SUBSTITUIU GRUPO DE COMPRADORES)
+  // 3. Status de Validade
   const valMap = {};
   filteredData.forEach(d => {
-    const year = d.validade !== 'N/A' ? d.validade.substring(0, 4) : 'N/D';
+    const year = (d.validade && d.validade.includes('/')) ? d.validade.split('/')[2] : 'N/D';
     valMap[year] = (valMap[year] || 0) + 1;
   });
   const sortedVal = Object.entries(valMap).sort((a, b) => a[0].localeCompare(b[0]));
@@ -221,7 +240,7 @@ function renderCharts() {
     }
   });
 
-  // 4. Distribuição de Frequência de PNs
+  // 4. Distribuição de Frequência
   const freqDist = { '1 Ocorrência': 0, '2 Ocorrências': 0, '3 Ocorrências': 0, '4+ Ocorrências': 0 };
   filteredData.forEach(d => {
     if (d.frequencia === 1) freqDist['1 Ocorrência']++;
