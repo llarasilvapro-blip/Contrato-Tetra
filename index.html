@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PROCUREMENT - Análise de Part Numbers em Contrato</title>
+  <title>Contratos Ativos Tetra Pak - Indiretos Industriais</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -22,7 +22,8 @@
             cardBorder: '#1f293d',
             emeraldAccent: '#10b981',
             amberAccent: '#f59e0b',
-            redAccent: '#ef4444'
+            redAccent: '#ef4444',
+            blueAccent: '#3b82f6'
           }
         }
       }
@@ -31,12 +32,12 @@
 </head>
 <body class="bg-darkBg text-slate-100 min-h-screen font-sans p-4 md:p-6 space-y-5">
 
-  <!-- CABEÇALHO -->
+  <!-- CABEÇALHO COM TÍTULO E SUBTÍTULO ATUALIZADOS -->
   <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-cardBg p-5 rounded-xl border border-cardBorder shadow-lg">
     <div>
-      <span class="text-xs font-bold text-emeraldAccent tracking-wider uppercase">PROCUREMENT - ANÁLISE DE CONTRATOS</span>
-      <h1 class="text-2xl font-extrabold text-white mt-0.5">Contagem & Frequência de Part Numbers</h1>
-      <p class="text-xs text-slate-400 mt-1" id="fileInfoLabel">Carregue sua planilha (.xlsx) para analisar a quantidade de repetições por Part Number</p>
+      <span class="text-xs font-bold text-emeraldAccent tracking-wider uppercase">INDIRETOS INDUSTRIAIS</span>
+      <h1 class="text-2xl font-extrabold text-white mt-0.5">Contratos Ativos Tetra Pak</h1>
+      <p class="text-xs text-slate-400 mt-1" id="fileInfoLabel">Carregue sua planilha (.xlsx) para analisar a frequência e repetição de Part Numbers</p>
     </div>
     <div>
       <label class="cursor-pointer bg-emeraldAccent hover:bg-emerald-600 text-slate-950 font-bold px-4 py-2.5 rounded-lg shadow-md transition inline-flex items-center gap-2 text-sm">
@@ -71,7 +72,7 @@
       </div>
     </div>
 
-    <!-- KPI CARDS - SEM PREÇO -->
+    <!-- KPI CARDS -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <div class="bg-cardBg p-4 rounded-xl border border-cardBorder">
         <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">TOTAL DE LINHAS NO CONTRATO</p>
@@ -93,33 +94,55 @@
 
       <div class="bg-cardBg p-4 rounded-xl border border-cardBorder">
         <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">MÁXIMA OCORRÊNCIA</p>
-        <h2 id="kpiMaxRepeticao" class="text-3xl font-black text-slate-200 mt-1">0 VEZES</h2>
+        <h2 id="kpiMaxRepeticao" class="text-3xl font-black text-blueAccent mt-1">0 VEZES</h2>
         <p id="kpiMaxRepeticaoPNs" class="text-[11px] text-slate-500 mt-1">Maior número de repetições</p>
       </div>
     </div>
 
-    <!-- GRÁFICOS -->
+    <!-- GRÁFICOS (4 ANÁLISES) -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Gráfico 1: Top 10 PNs -->
       <div class="bg-cardBg p-5 rounded-xl border border-cardBorder">
         <div class="text-center mb-2">
-          <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider">TOP 10 PART NUMBERS MAIS REPETIDOS</h3>
+          <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">TOP 10 PART NUMBERS MAIS REPETIDOS</h3>
         </div>
-        <div class="h-56">
+        <div class="h-52">
           <canvas id="chartTopDuplicados"></canvas>
         </div>
       </div>
 
+      <!-- Gráfico 2: Proporção -->
       <div class="bg-cardBg p-5 rounded-xl border border-cardBorder">
         <div class="text-center mb-2">
-          <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider">PROPORÇÃO DE OCORRÊNCIAS EM CONTRATO</h3>
+          <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">PROPORÇÃO DE OCORRÊNCIAS EM CONTRATO</h3>
         </div>
-        <div class="h-56 flex justify-center">
+        <div class="h-52 flex justify-center">
           <canvas id="chartDonutProporcao"></canvas>
+        </div>
+      </div>
+
+      <!-- Gráfico 3 (NOVO): Volume por Comprador -->
+      <div class="bg-cardBg p-5 rounded-xl border border-cardBorder">
+        <div class="text-center mb-2">
+          <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">VOLUME DE ITENS POR GRUPO DE COMPRADORES</h3>
+        </div>
+        <div class="h-52">
+          <canvas id="chartCompradores"></canvas>
+        </div>
+      </div>
+
+      <!-- Gráfico 4 (NOVO): Frequência de Ocorrências -->
+      <div class="bg-cardBg p-5 rounded-xl border border-cardBorder">
+        <div class="text-center mb-2">
+          <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">DISTRIBUIÇÃO DE REPETIÇÕES DE PART NUMBERS</h3>
+        </div>
+        <div class="h-52">
+          <canvas id="chartFreqDistribucao"></canvas>
         </div>
       </div>
     </div>
 
-    <!-- TABELA SEM PREÇO -->
+    <!-- TABELA -->
     <div class="bg-cardBg rounded-xl border border-cardBorder overflow-hidden">
       <div class="p-4 border-b border-cardBorder flex flex-col md:flex-row gap-3 justify-between items-center">
         <div class="relative w-full md:w-96">
@@ -137,6 +160,7 @@
               <th class="p-3">Texto Breve</th>
               <th class="p-3 text-emeraldAccent">Part Number Extraído</th>
               <th class="p-3">Ocorrências no Contrato</th>
+              <th class="p-3">Comprador</th>
               <th class="p-3">Validade</th>
             </tr>
           </thead>

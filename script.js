@@ -165,7 +165,7 @@ function renderCharts() {
     }
   });
 
-  // 2. Donut Proporção de Duplicidade
+  // 2. Proporção de Ocorrências
   const unicosCount = filteredData.filter(d => d.frequencia === 1).length;
   const dup2Count = filteredData.filter(d => d.frequencia === 2).length;
   const dup3Count = filteredData.filter(d => d.frequencia >= 3).length;
@@ -185,7 +185,7 @@ function renderCharts() {
     }
   });
 
-  // 3. NOVO: Volume por Grupo de Compradores
+  // 3. Volume por Comprador
   const compMap = {};
   filteredData.forEach(d => { compMap[d.comprador] = (compMap[d.comprador] || 0) + 1; });
   const sortedComps = Object.entries(compMap).sort((a, b) => b[1] - a[1]).slice(0, 8);
@@ -205,7 +205,7 @@ function renderCharts() {
     }
   });
 
-  // 4. NOVO: Distribuição de Frequências (Histograma de repetição)
+  // 4. Distribuição de Frequência de PNs
   const freqDist = { '1 Ocorrência': 0, '2 Ocorrências': 0, '3 Ocorrências': 0, '4+ Ocorrências': 0 };
   filteredData.forEach(d => {
     if (d.frequencia === 1) freqDist['1 Ocorrência']++;
