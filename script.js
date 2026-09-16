@@ -3,7 +3,7 @@ let filteredData = [];
 
 let chartTopDuplicados = null;
 let chartDonutProporcao = null;
-let chartCompradores = null;
+let chartValidade = null;
 let chartFreqDistribucao = null;
 
 function extractPartNumber(text) {
@@ -21,6 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   document.getElementById('searchInput').addEventListener('input', applyFilters);
+  document.getElementById('filterCPP').addEventListener('change', applyFilters);
   document.getElementById('filterComprador').addEventListener('change', applyFilters);
   document.getElementById('filterDuplicidade').addEventListener('change', applyFilters);
 });
@@ -52,6 +53,7 @@ function processDataset(json) {
 
     return {
       material: row['Material'] || 'N/A',
+      cpp: String(row['CPP'] || row['Centro'] || row['Plant'] || 'N/A').trim(),
       textoBreve: textoBreve,
       partNumber: pn,
       comprador: String(row['Grupo de compradores'] || 'N/A').trim(),
@@ -76,16 +78,26 @@ function processDataset(json) {
 }
 
 function populateFilterDropdowns() {
+  // Popula Compradores
   const compradores = [...new Set(rawData.map(d => d.comprador))].sort();
   const compSelect = document.getElementById('filterComprador');
   compSelect.innerHTML = '<option value="ALL">Todos os Compradores</option>';
   compradores.forEach(c => {
     compSelect.innerHTML += `<option value="${c}">${c}</option>`;
   });
+
+  // Popula CPP
+  const cpps = [...new Set(rawData.map(d => d.cpp))].sort();
+  const cppSelect = document.getElementById('filterCPP');
+  cppSelect.innerHTML = '<option value="ALL">Todos os CPPs</option>';
+  cpps.forEach(cpp => {
+    cppSelect.innerHTML += `<option value="${cpp}">CPP: ${cpp}</option>`;
+  });
 }
 
 function applyFilters() {
   const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+  const cppVal = document.getElementById('filterCPP').value;
   const comprador = document.getElementById('filterComprador').value;
   const duplicidade = document.getElementById('filterDuplicidade').value;
 
@@ -94,6 +106,7 @@ function applyFilters() {
                         item.partNumber.toLowerCase().includes(searchTerm) ||
                         String(item.material).toLowerCase().includes(searchTerm);
 
+    const matchCPP = cppVal === 'ALL' || item.cpp === cppVal;
     const matchComp = comprador === 'ALL' || item.comprador === comprador;
 
     let matchDup = true;
@@ -101,7 +114,7 @@ function applyFilters() {
     if (duplicidade === 'DUPLICADOS') matchDup = item.frequencia === 2;
     if (duplicidade === 'TRIPLICADOS') matchDup = item.frequencia >= 3;
 
-    return matchSearch && matchComp && matchDup;
+    return matchSearch && matchCPP && matchComp && matchDup;
   });
 
   updateDashboardUI();
@@ -185,23 +198,26 @@ function renderCharts() {
     }
   });
 
-  // 3. Volume por Comprador
-  const compMap = {};
-  filteredData.forEach(d => { compMap[d.comprador] = (compMap[d.comprador] || 0) + 1; });
-  const sortedComps = Object.entries(compMap).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  // 3. Status de Validade dos Contratos (SUBSTITUIU GRUPO DE COMPRADORES)
+  const valMap = {};
+  filteredData.forEach(d => {
+    const year = d.validade !== 'N/A' ? d.validade.substring(0, 4) : 'N/D';
+    valMap[year] = (valMap[year] || 0) + 1;
+  });
+  const sortedVal = Object.entries(valMap).sort((a, b) => a[0].localeCompare(b[0]));
 
-  if (chartCompradores) chartCompradores.destroy();
-  chartCompradores = new Chart(document.getElementById('chartCompradores').getContext('2d'), {
+  if (chartValidade) chartValidade.destroy();
+  chartValidade = new Chart(document.getElementById('chartValidade').getContext('2d'), {
     type: 'bar',
     data: {
-      labels: sortedComps.map(c => c[0]),
-      datasets: [{ data: sortedComps.map(c => c[1]), backgroundColor: '#3b82f6', borderRadius: 4 }]
+      labels: sortedVal.map(v => v[0]),
+      datasets: [{ data: sortedVal.map(v => v[1]), backgroundColor: '#3b82f6', borderRadius: 4 }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
-      scales: { x: { ticks: { color: '#94a3b8', font: { size: 9 } } }, y: { ticks: { color: '#94a3b8' } } }
+      scales: { x: { ticks: { color: '#94a3b8', font: { size: 10 } } }, y: { ticks: { color: '#94a3b8' } } }
     }
   });
 
@@ -246,6 +262,7 @@ function renderTable() {
 
     tr.innerHTML = `
       <td class="p-3 font-mono text-[11px] text-slate-400">${item.material}</td>
+      <td class="p-3 font-mono text-xs text-blue-400">${item.cpp}</td>
       <td class="p-3 font-sans text-xs text-slate-200">${item.textoBreve}</td>
       <td class="p-3 font-mono text-xs font-bold text-emeraldAccent">${item.partNumber}</td>
       <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] ${badgeColor}">${item.frequencia}x no contrato</span></td>
