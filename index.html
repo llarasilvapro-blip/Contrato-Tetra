@@ -72,20 +72,23 @@
     </div>
   </section>
 
-  <!-- QUADRANTES REESTRUTURADOS -->
+  <!-- QUADRANTES -->
   <section class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
     
-    <!-- QUADRANTE 1: Tabela de Materiais Repetidos -->
+    <!-- QUADRANTE 1: Tabela de Materiais Repetidos com Busca e Colunas Atualizadas -->
     <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 h-64 flex flex-col">
-      <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Materiais Repetidos</h3>
+      <div class="flex items-center justify-between mb-2 gap-2">
+        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Materiais Repetidos</h3>
+        <input type="text" id="searchRepetidosInput" placeholder="🔍 Filtrar PN, CPP ou Texto..." class="bg-slate-800 border border-slate-700 rounded-md px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-emerald-500 w-48">
+      </div>
       <div class="overflow-y-auto flex-1">
         <table class="w-full text-left border-collapse">
           <thead>
             <tr class="border-b border-slate-700 text-[11px] text-slate-400">
-              <th class="p-1">Part Number</th>
               <th class="p-1">CPP</th>
-              <th class="p-1">Qtd</th>
-              <th class="p-1">% Total</th>
+              <th class="p-1">Texto Breve</th>
+              <th class="p-1">Part Number</th>
+              <th class="p-1 text-right">Qtd</th>
             </tr>
           </thead>
           <tbody id="tabelaMateriaisRepetidosBody">
@@ -95,10 +98,10 @@
       </div>
     </div>
 
-    <!-- QUADRANTE 2: Proporção (Donut Chart) -->
+    <!-- QUADRANTE 2: Proporção (Donut Chart Corrigido) -->
     <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 h-64 flex flex-col">
       <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Proporção de Ocorrências em Contrato</h3>
-      <div class="flex-1 relative">
+      <div class="flex-1 relative w-full h-full min-h-0">
         <canvas id="chartDonutProporcao"></canvas>
       </div>
     </div>
@@ -162,7 +165,6 @@
     <div id="tableStatus" class="text-right text-[11px] text-slate-500 mt-2">Exibindo registros...</div>
   </section>
 
-  <!-- VÍNCULO DIRETO COM SCRIPT.JS -->
   <script src="script.js"></script>
 </body>
 </html>
