@@ -1,10 +1,10 @@
 let rawData = [];
 let filteredData = [];
 
-// Instância do único gráfico que permanece
+// Instância do Gráfico
 let chartDonutProporcao = null;
 
-// Helper seguro para atualizar o texto do DOM sem quebrar o código
+// Atualiza o texto de um elemento sem gerar exceções
 function setElementText(id, text) {
   const el = document.getElementById(id);
   if (el) el.innerText = text;
@@ -56,9 +56,7 @@ function extractPartNumber(text) {
 
 document.addEventListener("DOMContentLoaded", () => {
   const fileInput = document.getElementById('excelFileInput');
-  if (fileInput) {
-    fileInput.addEventListener('change', handleFileUpload);
-  }
+  if (fileInput) fileInput.addEventListener('change', handleFileUpload);
 
   const searchInput = document.getElementById('searchInput');
   if (searchInput) searchInput.addEventListener('input', applyFilters);
@@ -188,7 +186,7 @@ function updateDashboardUI() {
   setElementText('kpiDuplicados', `${pnsDuplicadosUnicos.toLocaleString('pt-BR')} PNs`);
   setElementText('kpiMaxRepeticao', maxRep > 1 ? `${maxRep} VEZES` : '1 VEZ');
 
-  // Atualizar Quadrantes
+  // Renderizar componentes
   renderTabelaMateriaisRepetidos();
   renderKpiVencimento();
   renderMétricasContrato();
@@ -196,9 +194,7 @@ function updateDashboardUI() {
   renderTable();
 }
 
-// ----------------------------------------------------
-// QUADRANTE 1: Tabela de Materiais Repetidos (Nºs e %)
-// ----------------------------------------------------
+// QUADRANTE 1: Tabela de Part Numbers Repetidos
 function renderTabelaMateriaisRepetidos() {
   const container = document.getElementById('tabelaMateriaisRepetidosBody');
   if (!container) return;
@@ -239,9 +235,7 @@ function renderTabelaMateriaisRepetidos() {
   });
 }
 
-// ----------------------------------------------------
-// QUADRANTE 2: KPI de Validade (Dias e %)
-// ----------------------------------------------------
+// QUADRANTE 2: Status de Validade
 function renderKpiVencimento() {
   const dates = filteredData
     .map(d => parseDateBR(d.validade))
@@ -269,9 +263,7 @@ function renderKpiVencimento() {
   setElementText('kpiVencimentoPct', `${pctRestante}% restante (${pctDecorrente}% decorrido)`);
 }
 
-// ----------------------------------------------------
-// QUADRANTE 3: Saldo, Disponível e Consumido (Nºs e %)
-// ----------------------------------------------------
+// QUADRANTE 3: Métricas de Saldo e Consumo
 function renderMétricasContrato() {
   let totalConsumido = 0;
   let totalDisponivel = 0;
@@ -298,9 +290,7 @@ function renderMétricasContrato() {
   setElementText('metricDisponivel', `${totalDisponivel.toLocaleString('pt-BR')} (${pctDisponivel}%)`);
 }
 
-// ----------------------------------------------------
 // QUADRANTE 4: Proporção (Donut Chart)
-// ----------------------------------------------------
 function renderChartProporcao() {
   const elChart = document.getElementById('chartDonutProporcao');
   if (!elChart || typeof Chart === 'undefined') return;
@@ -330,9 +320,7 @@ function renderChartProporcao() {
   });
 }
 
-// ----------------------------------------------------
-// Tabela Principal (Base da Página)
-// ----------------------------------------------------
+// Tabela Inferior
 function renderTable() {
   const tbody = document.getElementById('tableBody');
   if (!tbody) return;
@@ -342,7 +330,7 @@ function renderTable() {
 
   displayRows.forEach(item => {
     const tr = document.createElement('tr');
-    tr.className = "hover:bg-slate-800/50 transition border-b border-cardBorder/40";
+    tr.className = "hover:bg-slate-800/50 transition border-b border-slate-800/40";
 
     let badgeColor = "bg-slate-800 text-slate-400";
     if (item.frequencia === 2) badgeColor = "bg-amber-500/20 text-amber-400 border border-amber-500/30";
@@ -352,7 +340,7 @@ function renderTable() {
       <td class="p-3 font-mono text-[11px] text-slate-400">${item.material}</td>
       <td class="p-3 font-mono text-xs text-blue-400">${item.cpp}</td>
       <td class="p-3 font-sans text-xs text-slate-200">${item.textoBreve}</td>
-      <td class="p-3 font-mono text-xs font-bold text-emeraldAccent">${item.partNumber}</td>
+      <td class="p-3 font-mono text-xs font-bold text-emerald-400">${item.partNumber}</td>
       <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] ${badgeColor}">${item.frequencia}x no contrato</span></td>
       <td class="p-3 text-xs text-slate-300">${item.comprador}</td>
       <td class="p-3 text-xs text-slate-400">${item.validade}</td>
