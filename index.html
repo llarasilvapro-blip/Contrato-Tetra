@@ -4,11 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Contratos Ativos Tetra Pak</title>
-  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- SheetJS para ler planilhas Excel -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans p-6">
@@ -75,9 +72,9 @@
   <!-- QUADRANTES -->
   <section class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
     
-    <!-- QUADRANTE 1: Tabela de Materiais Repetidos com Busca e Colunas Atualizadas -->
-    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 h-64 flex flex-col">
-      <div class="flex items-center justify-between mb-2 gap-2">
+    <!-- QUADRANTE 1: Materiais Repetidos -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 h-72 flex flex-col">
+      <div class="flex items-center justify-between mb-3 gap-2">
         <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Materiais Repetidos</h3>
         <input type="text" id="searchRepetidosInput" placeholder="🔍 Filtrar PN, CPP ou Texto..." class="bg-slate-800 border border-slate-700 rounded-md px-2 py-1 text-[11px] text-slate-200 focus:outline-none focus:border-emerald-500 w-48">
       </div>
@@ -85,28 +82,28 @@
         <table class="w-full text-left border-collapse">
           <thead>
             <tr class="border-b border-slate-700 text-[11px] text-slate-400">
-              <th class="p-1">CPP</th>
-              <th class="p-1">Texto Breve</th>
-              <th class="p-1">Part Number</th>
-              <th class="p-1 text-right">Qtd</th>
+              <th class="p-1.5">CPP</th>
+              <th class="p-1.5">Texto Breve</th>
+              <th class="p-1.5">Part Number</th>
+              <th class="p-1.5 text-right">Qtd</th>
             </tr>
           </thead>
           <tbody id="tabelaMateriaisRepetidosBody">
-            <!-- Preenchido via JS -->
+            <!-- JS -->
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- QUADRANTE 2: Proporção (Donut Chart Corrigido) -->
-    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 h-64 flex flex-col">
+    <!-- QUADRANTE 2: Donut Chart -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 h-72 flex flex-col">
       <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Proporção de Ocorrências em Contrato</h3>
       <div class="flex-1 relative w-full h-full min-h-0">
         <canvas id="chartDonutProporcao"></canvas>
       </div>
     </div>
 
-    <!-- QUADRANTE 3: Status de Validade -->
+    <!-- QUADRANTE 3: Validade -->
     <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 h-48 flex flex-col justify-center">
       <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Status de Validade (KPI)</h3>
       <div class="mt-2">
@@ -116,7 +113,7 @@
       </div>
     </div>
 
-    <!-- QUADRANTE 4: Métricas de Saldo e Consumo -->
+    <!-- QUADRANTE 4: Métricas -->
     <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 h-48 flex flex-col justify-center">
       <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Métricas de Saldo e Consumo</h3>
       <div class="grid grid-cols-3 gap-2 mt-2 text-center">
@@ -137,7 +134,7 @@
 
   </section>
 
-  <!-- TABELA DE MATERIAIS PRINCIPAL -->
+  <!-- TABELA PRINCIPAL -->
   <section class="bg-slate-900 border border-slate-800 rounded-xl p-4">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
       <input type="text" id="searchInput" placeholder="🔍 Buscar por Part Number ou Texto..." class="bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
@@ -158,7 +155,7 @@
           </tr>
         </thead>
         <tbody id="tableBody">
-          <!-- Preenchido via JS -->
+          <!-- JS -->
         </tbody>
       </table>
     </div>
