@@ -4,8 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Contratos Ativos Tetra Pak</title>
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- SheetJS para ler planilhas Excel -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans p-6">
@@ -69,10 +72,10 @@
     </div>
   </section>
 
-  <!-- QUADRANTES -->
+  <!-- QUADRANTES REESTRUTURADOS -->
   <section class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
     
-    <!-- QUADRANTE 1: Materiais Repetidos -->
+    <!-- QUADRANTE 1: Materiais Repetidos (Com Filtro, CPP, Texto Breve e PN) -->
     <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 h-72 flex flex-col">
       <div class="flex items-center justify-between mb-3 gap-2">
         <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Materiais Repetidos</h3>
@@ -95,7 +98,7 @@
       </div>
     </div>
 
-    <!-- QUADRANTE 2: Donut Chart -->
+    <!-- QUADRANTE 2: Proporção (Donut Chart com Layout e Legenda Corrigidos) -->
     <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 h-72 flex flex-col">
       <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Proporção de Ocorrências em Contrato</h3>
       <div class="flex-1 relative w-full h-full min-h-0">
@@ -103,7 +106,7 @@
       </div>
     </div>
 
-    <!-- QUADRANTE 3: Validade -->
+    <!-- QUADRANTE 3: Status de Validade -->
     <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 h-48 flex flex-col justify-center">
       <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Status de Validade (KPI)</h3>
       <div class="mt-2">
@@ -113,7 +116,7 @@
       </div>
     </div>
 
-    <!-- QUADRANTE 4: Métricas -->
+    <!-- QUADRANTE 4: Métricas de Saldo e Consumo -->
     <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 h-48 flex flex-col justify-center">
       <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Métricas de Saldo e Consumo</h3>
       <div class="grid grid-cols-3 gap-2 mt-2 text-center">
@@ -134,7 +137,7 @@
 
   </section>
 
-  <!-- TABELA PRINCIPAL -->
+  <!-- TABELA DE MATERIAIS PRINCIPAL -->
   <section class="bg-slate-900 border border-slate-800 rounded-xl p-4">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
       <input type="text" id="searchInput" placeholder="🔍 Buscar por Part Number ou Texto..." class="bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
