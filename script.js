@@ -46,9 +46,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const searchInput = document.getElementById('searchInput');
   if (searchInput) searchInput.addEventListener('input', applyFilters);
 
-  const searchCPP = document.getElementById('searchCPP');
-  if (searchCPP) searchCPP.addEventListener('input', applyFilters);
-
   const searchRepetidosInput = document.getElementById('searchRepetidosInput');
   if (searchRepetidosInput) searchRepetidosInput.addEventListener('input', renderTabelaMateriaisRepetidos);
 
@@ -81,21 +78,20 @@ function processDataset(json) {
     const textoBreve = String(row['Texto breve'] || row['Coluna1'] || '');
     const pn = extractPartNumber(textoBreve);
     
-    // Mapeamento compatível com EXPORT_20260921_180017.xlsx
-    const rawCPP = row['Centro'] || row['CPP'] || row['Plant'] || row['Centro de Custo'] || 'N/A';
-    const rawValidade = row['Fim da validade'] || row['Validade'] || row['Fim Validade'] || 'N/A';
+    // Obter identificador único (Material ou Centro)
+    const matVal = row['Material'] || row['Centro'] || row['CPP'] || 'N/A';
 
     return {
-      material: row['Material'] || 'N/A',
-      cpp: String(rawCPP).trim(),
+      material: String(matVal).trim(),
+      cpp: String(matVal).trim(),
       textoBreve: textoBreve,
       partNumber: pn,
       comprador: String(row['Grupo de compradores'] || row['Comprador'] || 'N/A').trim(),
-      validade: formatExcelDate(rawValidade),
+      validade: formatExcelDate(row['Fim da validade'] || row['Validade'] || 'N/A'),
       
-      qtdContratada: Number(row['Quantidade prevista'] || row['Qtd Contratada'] || row['Qtd Total'] || 0),
-      qtdConsumida: Number(row['Valor solicitado'] || row['Qtd Consumida'] || row['Qtd Utilizada'] || 0),
-      qtdDisponivel: Number(row['Valor global pendente'] || row['Qtd Disponivel'] || row['Saldo Qtd'] || 0)
+      qtdContratada: Number(row['Quantidade prevista'] || row['Qtd Contratada'] || 0),
+      qtdConsumida: Number(row['Valor solicitado'] || row['Qtd Consumida'] || 0),
+      qtdDisponivel: Number(row['Valor global pendente'] || row['Qtd Disponivel'] || 0)
     };
   });
 
@@ -127,21 +123,18 @@ function populateFilterDropdowns() {
 
 function applyFilters() {
   const searchInput = document.getElementById('searchInput');
-  const searchCPP = document.getElementById('searchCPP');
   const filterComprador = document.getElementById('filterComprador');
   const filterDuplicidade = document.getElementById('filterDuplicidade');
 
   const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
-  const cppSearchTerm = searchCPP ? searchCPP.value.toLowerCase() : '';
   const comprador = filterComprador ? filterComprador.value : 'ALL';
   const duplicidade = filterDuplicidade ? filterDuplicidade.value : 'ALL';
 
   filteredData = rawData.filter(item => {
     const matchSearch = item.textoBreve.toLowerCase().includes(searchTerm) ||
                         item.partNumber.toLowerCase().includes(searchTerm) ||
-                        String(item.material).toLowerCase().includes(searchTerm);
+                        item.material.toLowerCase().includes(searchTerm);
 
-    const matchCPP = item.cpp.toLowerCase().includes(cppSearchTerm);
     const matchComp = comprador === 'ALL' || item.comprador === comprador;
 
     let matchDup = true;
@@ -149,7 +142,7 @@ function applyFilters() {
     if (duplicidade === 'DUPLICADOS') matchDup = item.frequencia === 2;
     if (duplicidade === 'TRIPLICADOS') matchDup = item.frequencia >= 3;
 
-    return matchSearch && matchCPP && matchComp && matchDup;
+    return matchSearch && matchComp && matchDup;
   });
 
   updateDashboardUI();
@@ -190,7 +183,7 @@ function renderTabelaMateriaisRepetidos() {
   filteredData.forEach(d => {
     if (d.partNumber !== 'N/A') {
       if (!mapPns[d.partNumber]) {
-        mapPns[d.partNumber] = { partNumber: d.partNumber, cpp: d.cpp, textoBreve: d.textoBreve, count: 0 };
+        mapPns[d.partNumber] = { partNumber: d.partNumber, material: d.material, textoBreve: d.textoBreve, count: 0 };
       }
       mapPns[d.partNumber].count++;
     }
@@ -203,7 +196,7 @@ function renderTabelaMateriaisRepetidos() {
   if (term !== '') {
     arrayPNs = arrayPNs.filter(item => 
       item.partNumber.toLowerCase().includes(term) || 
-      item.cpp.toLowerCase().includes(term) ||
+      item.material.toLowerCase().includes(term) ||
       item.textoBreve.toLowerCase().includes(term)
     );
   }
@@ -217,7 +210,7 @@ function renderTabelaMateriaisRepetidos() {
     const tr = document.createElement('tr');
     tr.className = "border-b border-slate-700/50 hover:bg-slate-800/40";
     tr.innerHTML = `
-      <td class="p-1.5 font-mono text-xs text-blue-400">${item.cpp}</td>
+      <td class="p-1.5 font-mono text-xs text-blue-400">${item.material}</td>
       <td class="p-1.5 text-xs text-slate-300 truncate max-w-[120px]" title="${item.textoBreve}">${item.textoBreve}</td>
       <td class="p-1.5 font-mono text-xs text-emerald-400">${item.partNumber}</td>
       <td class="p-1.5 text-xs font-bold text-amber-400 text-right">${item.count.toLocaleString('pt-BR')}</td>
@@ -327,8 +320,7 @@ function renderTable() {
     if (item.frequencia >= 3) badgeColor = "bg-red-500/20 text-red-400 border border-red-500/30 font-bold";
 
     tr.innerHTML = `
-      <td class="p-3 font-mono text-[11px] text-slate-400">${item.material}</td>
-      <td class="p-3 font-mono text-xs text-blue-400">${item.cpp}</td>
+      <td class="p-3 font-mono text-[11px] text-blue-400">${item.material}</td>
       <td class="p-3 font-sans text-xs text-slate-200">${item.textoBreve}</td>
       <td class="p-3 font-mono text-xs font-bold text-emerald-400">${item.partNumber}</td>
       <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] ${badgeColor}">${item.frequencia}x no contrato</span></td>
