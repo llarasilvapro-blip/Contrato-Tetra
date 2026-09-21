@@ -4,7 +4,7 @@ let filteredData = [];
 // Instância do Gráfico
 let chartDonutProporcao = null;
 
-// Atualiza o texto de um elemento sem gerar exceções
+// Helper seguro para atualizar o texto do DOM sem quebrar a execução
 function setElementText(id, text) {
   const el = document.getElementById(id);
   if (el) el.innerText = text;
@@ -186,7 +186,7 @@ function updateDashboardUI() {
   setElementText('kpiDuplicados', `${pnsDuplicadosUnicos.toLocaleString('pt-BR')} PNs`);
   setElementText('kpiMaxRepeticao', maxRep > 1 ? `${maxRep} VEZES` : '1 VEZ');
 
-  // Renderizar componentes
+  // Renderizar Quadrantes
   renderTabelaMateriaisRepetidos();
   renderKpiVencimento();
   renderMétricasContrato();
@@ -320,7 +320,7 @@ function renderChartProporcao() {
   });
 }
 
-// Tabela Inferior
+// TABELA PRINCIPAL
 function renderTable() {
   const tbody = document.getElementById('tableBody');
   if (!tbody) return;

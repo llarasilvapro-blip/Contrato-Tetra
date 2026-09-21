@@ -3,184 +3,166 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Contratos Ativos Tetra Pak - Indiretos Industriais</title>
-  
+  <title>Contratos Ativos Tetra Pak</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Chart.js CDN -->
+  <!-- SheetJS para ler planilhas Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- SheetJS CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            darkBg: '#090d16',
-            cardBg: '#111827',
-            cardBorder: '#1f293d',
-            emeraldAccent: '#10b981',
-            amberAccent: '#f59e0b',
-            redAccent: '#ef4444',
-            blueAccent: '#3b82f6',
-            purpleAccent: '#8b5cf6'
-          }
-        }
-      }
-    }
-  </script>
 </head>
-<body class="bg-darkBg text-slate-100 min-h-screen font-sans p-4 md:p-6 space-y-5">
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans p-6">
 
   <!-- CABEÇALHO -->
-  <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-cardBg p-5 rounded-xl border border-cardBorder shadow-lg">
+  <header class="flex flex-col md:flex-row md:items-center justify-between mb-6 pb-4 border-b border-slate-800 gap-4">
     <div>
-      <span class="text-xs font-bold text-emeraldAccent tracking-wider uppercase">INDIRETOS INDUSTRIAIS</span>
-      <h1 class="text-2xl font-extrabold text-white mt-0.5">Contratos Ativos Tetra Pak</h1>
-      <p class="text-xs text-slate-400 mt-1" id="fileInfoLabel">Carregue sua planilha (.xlsx) para analisar a frequência e repetição de Part Numbers</p>
+      <span class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Indiretos Industriais</span>
+      <h1 class="text-2xl font-extrabold text-white">Contratos Ativos Tetra Pak</h1>
+      <p id="fileInfoLabel" class="text-xs text-slate-400 mt-0.5">Carregue sua planilha (.xlsx) para analisar a frequência e repetição de Part Numbers</p>
     </div>
-    <div>
-      <label class="cursor-pointer bg-emeraldAccent hover:bg-emerald-600 text-slate-950 font-bold px-4 py-2.5 rounded-lg shadow-md transition inline-flex items-center gap-2 text-sm">
-        <span>📁 Carregar / Atualizar Planilha (.xlsx)</span>
-        <input type="file" id="excelFileInput" accept=".xlsx, .xls" class="hidden">
-      </label>
-    </div>
+    <label class="cursor-pointer bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-4 py-2 rounded-lg text-sm transition flex items-center gap-2 self-start md:self-auto">
+      <span>📁 Carregar / Atualizar Planilha (.xlsx)</span>
+      <input type="file" id="excelFileInput" accept=".xlsx, .xls" class="hidden">
+    </label>
   </header>
 
-  <!-- PAINEL PRINCIPAL -->
-  <div id="mainContent" class="space-y-5">
+  <!-- FILTROS -->
+  <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6 bg-slate-900/50 p-4 rounded-xl border border-slate-800">
+    <div>
+      <label class="block text-xs font-semibold text-slate-400 mb-1">Comprador / Grupo</label>
+      <select id="filterComprador" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+        <option value="ALL">Todos os Compradores</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs font-semibold text-slate-400 mb-1">Status de Frequência</label>
+      <select id="filterDuplicidade" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+        <option value="ALL">Todos os Itens</option>
+        <option value="UNICOS">Somente Únicos (1x)</option>
+        <option value="DUPLICADOS">Duplicados (2x)</option>
+        <option value="TRIPLICADOS">Triplicados ou + (3x+)</option>
+      </select>
+    </div>
+    <div class="flex items-end text-right">
+      <span id="filteredCountLabel" class="text-xs text-slate-400 w-full">0 de 0 itens</span>
+    </div>
+  </section>
+
+  <!-- KPIS DO TOPO -->
+  <section class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+      <span class="block text-[10px] font-bold text-slate-400 uppercase">Total de Linhas no Contrato</span>
+      <div id="kpiTotalItens" class="text-2xl font-extrabold text-emerald-400 mt-1">0 ITENS</div>
+      <span class="text-[10px] text-slate-500">Itens totais mapeados</span>
+    </div>
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+      <span class="block text-[10px] font-bold text-slate-400 uppercase">Part Numbers Únicos</span>
+      <div id="kpiUnicos" class="text-2xl font-extrabold text-amber-400 mt-1">0 PNs</div>
+      <span class="text-[10px] text-slate-500">Códigos de peças distintos</span>
+    </div>
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+      <span class="block text-[10px] font-bold text-slate-400 uppercase">PNs Repetidos (2x ou +)</span>
+      <div id="kpiDuplicados" class="text-2xl font-extrabold text-red-400 mt-1">0 PNs</div>
+      <span class="text-[10px] text-slate-500">Total de PNs duplicados</span>
+    </div>
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+      <span class="block text-[10px] font-bold text-slate-400 uppercase">Máxima Ocorrência</span>
+      <div id="kpiMaxRepeticao" class="text-2xl font-extrabold text-blue-400 mt-1">0 VEZES</div>
+      <span class="text-[10px] text-slate-500">Maior número de repetições</span>
+    </div>
+  </section>
+
+  <!-- QUADRANTES REESTRUTURADOS -->
+  <section class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
     
-    <!-- BARRA DE FILTROS SUPERIOR -->
-    <div class="bg-cardBg p-4 rounded-xl border border-cardBorder grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 items-center text-xs">
-      <div>
-        <label class="text-slate-400 mb-1 block">Comprador / Grupo</label>
-        <select id="filterComprador" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-emeraldAccent focus:outline-none">
-          <option value="ALL">Todos os Compradores</option>
-        </select>
-      </div>
-      <div>
-        <label class="text-slate-400 mb-1 block">Status de Frequência</label>
-        <select id="filterDuplicidade" class="w-full bg-slate-900 border border-slate-700 text-slate-200 rounded-lg p-2 focus:ring-1 focus:ring-emeraldAccent focus:outline-none">
-          <option value="ALL">Todos os Itens</option>
-          <option value="UNICOS">Apenas Únicos (1x)</option>
-          <option value="DUPLICADOS">Duplicados (2x)</option>
-          <option value="TRIPLICADOS">Triplicados ou + (3x+)</option>
-        </select>
-      </div>
-      <div class="text-right pt-2 md:pt-0">
-        <span id="filteredCountLabel" class="text-slate-400 text-xs font-mono">0 itens</span>
-      </div>
-    </div>
-
-    <!-- KPI CARDS -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div class="bg-cardBg p-4 rounded-xl border border-cardBorder">
-        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">TOTAL DE LINHAS NO CONTRATO</p>
-        <h2 id="kpiTotalItens" class="text-3xl font-black text-emeraldAccent mt-1">0 ITENS</h2>
-        <p id="kpiTotalSub" class="text-[11px] text-slate-500 mt-1">Itens totais mapeados</p>
-      </div>
-
-      <div class="bg-cardBg p-4 rounded-xl border border-cardBorder">
-        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">PART NUMBERS ÚNICOS</p>
-        <h2 id="kpiUnicos" class="text-3xl font-black text-amberAccent mt-1">0 PNs</h2>
-        <p class="text-[11px] text-slate-500 mt-1">Códigos de peças distintos</p>
-      </div>
-
-      <div class="bg-cardBg p-4 rounded-xl border border-cardBorder">
-        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">PNs REPETIDOS (2x ou +)</p>
-        <h2 id="kpiDuplicados" class="text-3xl font-black text-redAccent mt-1">0 PNs</h2>
-        <p id="kpiDuplicadosSub" class="text-[11px] text-slate-500 mt-1">Total de 0 itens duplicados</p>
-      </div>
-
-      <div class="bg-cardBg p-4 rounded-xl border border-cardBorder">
-        <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">MÁXIMA OCORRÊNCIA</p>
-        <h2 id="kpiMaxRepeticao" class="text-3xl font-black text-blueAccent mt-1">0 VEZES</h2>
-        <p id="kpiMaxRepeticaoPNs" class="text-[11px] text-slate-500 mt-1">Maior número de repetições</p>
-      </div>
-    </div>
-
-    <!-- GRÁFICOS -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <!-- Gráfico 1: Top 10 PNs -->
-      <div class="bg-cardBg p-5 rounded-xl border border-cardBorder">
-        <div class="text-center mb-2">
-          <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">TOP 10 PART NUMBERS MAIS REPETIDOS</h3>
-        </div>
-        <div class="h-52">
-          <canvas id="chartTopDuplicados"></canvas>
-        </div>
-      </div>
-
-      <!-- Gráfico 2: Proporção -->
-      <div class="bg-cardBg p-5 rounded-xl border border-cardBorder">
-        <div class="text-center mb-2">
-          <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">PROPORÇÃO DE OCORRÊNCIAS EM CONTRATO</h3>
-        </div>
-        <div class="h-52 flex justify-center">
-          <canvas id="chartDonutProporcao"></canvas>
-        </div>
-      </div>
-
-      <!-- Gráfico 3: Status de Validade -->
-      <div class="bg-cardBg p-5 rounded-xl border border-cardBorder">
-        <div class="text-center mb-2">
-          <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">STATUS DE VALIDADE DOS CONTRATOS</h3>
-        </div>
-        <div class="h-52">
-          <canvas id="chartValidade"></canvas>
-        </div>
-      </div>
-
-      <!-- Gráfico 4: Frequência de Ocorrências -->
-      <div class="bg-cardBg p-5 rounded-xl border border-cardBorder">
-        <div class="text-center mb-2">
-          <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">DISTRIBUIÇÃO DE REPETIÇÕES DE PART NUMBERS</h3>
-        </div>
-        <div class="h-52">
-          <canvas id="chartFreqDistribucao"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <!-- TABELA COM BUSCAS POR TEXTO (PART NUMBER E CPP) -->
-    <div class="bg-cardBg rounded-xl border border-cardBorder overflow-hidden">
-      <div class="p-4 border-b border-cardBorder flex flex-col md:flex-row gap-3 justify-between items-center">
-        <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto flex-1 max-w-2xl">
-          <!-- Busca por Part Number / Texto Breve -->
-          <div class="relative w-full sm:w-80">
-            <input type="text" id="searchInput" placeholder="🔍 Buscar por Part Number ou Texto..." 
-                   class="w-full bg-slate-900 border border-slate-700 text-slate-200 px-3 py-2 text-xs rounded-lg focus:ring-1 focus:ring-emeraldAccent focus:outline-none">
-          </div>
-          <!-- Busca por CPP -->
-          <div class="w-full sm:w-48">
-            <input type="text" id="searchCPP" placeholder="🔍 Buscar por CPP..." 
-                   class="w-full bg-slate-900 border border-slate-700 text-slate-200 px-3 py-2 text-xs rounded-lg focus:ring-1 focus:ring-emeraldAccent focus:outline-none">
-          </div>
-        </div>
-        <div class="text-xs text-slate-400" id="tableStatus">Exibindo registros</div>
-      </div>
-
-      <div class="overflow-x-auto max-h-[450px]">
-        <table class="w-full text-left text-xs text-slate-300">
-          <thead class="bg-slate-900/90 text-slate-400 uppercase font-semibold sticky top-0 border-b border-cardBorder">
-            <tr>
-              <th class="p-3">Material</th>
-              <th class="p-3">CPP</th>
-              <th class="p-3">Texto Breve</th>
-              <th class="p-3 text-emeraldAccent">Part Number Extraído</th>
-              <th class="p-3">Ocorrências no Contrato</th>
-              <th class="p-3">Comprador</th>
-              <th class="p-3">Validade</th>
+    <!-- QUADRANTE 1: Tabela de Materiais Repetidos -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 h-64 flex flex-col">
+      <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Materiais Repetidos</h3>
+      <div class="overflow-y-auto flex-1">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-slate-700 text-[11px] text-slate-400">
+              <th class="p-1">Part Number</th>
+              <th class="p-1">CPP</th>
+              <th class="p-1">Qtd</th>
+              <th class="p-1">% Total</th>
             </tr>
           </thead>
-          <tbody id="tableBody" class="divide-y divide-cardBorder/50 font-mono"></tbody>
+          <tbody id="tabelaMateriaisRepetidosBody">
+            <!-- Preenchido via JS -->
+          </tbody>
         </table>
       </div>
     </div>
 
-  </div>
+    <!-- QUADRANTE 2: Proporção (Donut Chart) -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 h-64 flex flex-col">
+      <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Proporção de Ocorrências em Contrato</h3>
+      <div class="flex-1 relative">
+        <canvas id="chartDonutProporcao"></canvas>
+      </div>
+    </div>
 
-  <script src="script.js?v=3"></script>
+    <!-- QUADRANTE 3: Status de Validade -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 h-48 flex flex-col justify-center">
+      <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Status de Validade (KPI)</h3>
+      <div class="mt-2">
+        <div id="kpiVencimentoDias" class="text-3xl font-extrabold text-blue-400">-- dias restantes</div>
+        <div id="kpiVencimentoData" class="text-sm text-slate-400 mt-1">Expira em: --/--/----</div>
+        <div id="kpiVencimentoPct" class="text-xs font-semibold text-emerald-400 mt-2">--% restante</div>
+      </div>
+    </div>
+
+    <!-- QUADRANTE 4: Métricas de Saldo e Consumo -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 h-48 flex flex-col justify-center">
+      <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Métricas de Saldo e Consumo</h3>
+      <div class="grid grid-cols-3 gap-2 mt-2 text-center">
+        <div class="bg-slate-800/60 p-2 rounded-lg">
+          <span class="block text-[10px] text-slate-400 uppercase">Consumido</span>
+          <span id="metricConsumido" class="text-sm font-bold text-amber-400">0 (0%)</span>
+        </div>
+        <div class="bg-slate-800/60 p-2 rounded-lg">
+          <span class="block text-[10px] text-slate-400 uppercase">Saldo Contrato</span>
+          <span id="metricSaldo" class="text-sm font-bold text-blue-400">0 (0%)</span>
+        </div>
+        <div class="bg-slate-800/60 p-2 rounded-lg">
+          <span class="block text-[10px] text-slate-400 uppercase">Disponível</span>
+          <span id="metricDisponivel" class="text-sm font-bold text-emerald-400">0 (0%)</span>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- TABELA DE MATERIAIS PRINCIPAL -->
+  <section class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      <input type="text" id="searchInput" placeholder="🔍 Buscar por Part Number ou Texto..." class="bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+      <input type="text" id="searchCPP" placeholder="🔍 Buscar por CPP..." class="bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse text-xs">
+        <thead>
+          <tr class="border-b border-slate-800 text-slate-400 uppercase text-[10px]">
+            <th class="p-3">Material</th>
+            <th class="p-3">CPP</th>
+            <th class="p-3">Texto Breve</th>
+            <th class="p-3">Part Number Extraído</th>
+            <th class="p-3">Ocorrências no Contrato</th>
+            <th class="p-3">Comprador</th>
+            <th class="p-3">Validade</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <!-- Preenchido via JS -->
+        </tbody>
+      </table>
+    </div>
+    <div id="tableStatus" class="text-right text-[11px] text-slate-500 mt-2">Exibindo registros...</div>
+  </section>
+
+  <!-- VÍNCULO DIRETO COM SCRIPT.JS -->
+  <script src="script.js"></script>
 </body>
 </html>
