@@ -64,6 +64,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const searchCPP = document.getElementById('searchCPP');
   if (searchCPP) searchCPP.addEventListener('input', applyFilters);
 
+  // Pesquisa dinâmica na tabela de Materiais Repetidos
+  const searchRepetidosInput = document.getElementById('searchRepetidosInput');
+  if (searchRepetidosInput) searchRepetidosInput.addEventListener('input', renderTabelaMateriaisRepetidos);
+
   const filterComprador = document.getElementById('filterComprador');
   if (filterComprador) filterComprador.addEventListener('change', applyFilters);
 
@@ -194,11 +198,14 @@ function updateDashboardUI() {
   renderTable();
 }
 
-// QUADRANTE 1: Tabela de Part Numbers Repetidos
+// QUADRANTE 1: Tabela de Part Numbers Repetidos com Filtro
 function renderTabelaMateriaisRepetidos() {
   const container = document.getElementById('tabelaMateriaisRepetidosBody');
   if (!container) return;
   container.innerHTML = '';
+
+  const searchRepetidosInput = document.getElementById('searchRepetidosInput');
+  const term = searchRepetidosInput ? searchRepetidosInput.value.toLowerCase().trim() : '';
 
   const totalLinhas = filteredData.length;
   const mapPns = {};
@@ -212,12 +219,19 @@ function renderTabelaMateriaisRepetidos() {
     }
   });
 
-  const arrayPNs = Object.values(mapPns)
+  let arrayPNs = Object.values(mapPns)
     .filter(item => item.count > 1)
     .sort((a, b) => b.count - a.count);
 
+  if (term !== '') {
+    arrayPNs = arrayPNs.filter(item => 
+      item.partNumber.toLowerCase().includes(term) || 
+      item.cpp.toLowerCase().includes(term)
+    );
+  }
+
   if (arrayPNs.length === 0) {
-    container.innerHTML = `<tr><td colspan="4" class="p-3 text-center text-xs text-slate-500">Nenhum Part Number repetido encontrado.</td></tr>`;
+    container.innerHTML = `<tr><td colspan="4" class="p-3 text-center text-xs text-slate-500">Nenhum item encontrado.</td></tr>`;
     return;
   }
 
