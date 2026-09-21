@@ -4,7 +4,7 @@ let filteredData = [];
 // Instância do Gráfico
 let chartDonutProporcao = null;
 
-// Helper seguro para atualizar o texto do DOM sem quebrar a execução
+// Helper seguro para atualizar o texto do DOM
 function setElementText(id, text) {
   const el = document.getElementById(id);
   if (el) el.innerText = text;
@@ -198,7 +198,7 @@ function updateDashboardUI() {
   renderTable();
 }
 
-// QUADRANTE 1: Tabela de Part Numbers Repetidos com Filtro
+// QUADRANTE 1: Tabela de Part Numbers Repetidos (CPP, Texto Breve, Part Number e Qtd)
 function renderTabelaMateriaisRepetidos() {
   const container = document.getElementById('tabelaMateriaisRepetidosBody');
   if (!container) return;
@@ -207,13 +207,17 @@ function renderTabelaMateriaisRepetidos() {
   const searchRepetidosInput = document.getElementById('searchRepetidosInput');
   const term = searchRepetidosInput ? searchRepetidosInput.value.toLowerCase().trim() : '';
 
-  const totalLinhas = filteredData.length;
   const mapPns = {};
 
   filteredData.forEach(d => {
     if (d.partNumber !== 'N/A') {
       if (!mapPns[d.partNumber]) {
-        mapPns[d.partNumber] = { partNumber: d.partNumber, cpp: d.cpp, count: 0 };
+        mapPns[d.partNumber] = { 
+          partNumber: d.partNumber, 
+          cpp: d.cpp, 
+          textoBreve: d.textoBreve, 
+          count: 0 
+        };
       }
       mapPns[d.partNumber].count++;
     }
@@ -226,30 +230,76 @@ function renderTabelaMateriaisRepetidos() {
   if (term !== '') {
     arrayPNs = arrayPNs.filter(item => 
       item.partNumber.toLowerCase().includes(term) || 
-      item.cpp.toLowerCase().includes(term)
+      item.cpp.toLowerCase().includes(term) ||
+      item.textoBreve.toLowerCase().includes(term)
     );
   }
 
   if (arrayPNs.length === 0) {
-    container.innerHTML = `<tr><td colspan="4" class="p-3 text-center text-xs text-slate-500">Nenhum item encontrado.</td></tr>`;
+    container.innerHTML = `<tr><td colspan="4" class="p-3 text-center text-xs text-slate-500">Nenhum item repetido encontrado.</td></tr>`;
     return;
   }
 
   arrayPNs.forEach(item => {
-    const pct = totalLinhas > 0 ? ((item.count / totalLinhas) * 100).toFixed(2) : '0.00';
     const tr = document.createElement('tr');
     tr.className = "border-b border-slate-700/50 hover:bg-slate-800/40";
     tr.innerHTML = `
-      <td class="p-2 font-mono text-xs text-emerald-400">${item.partNumber}</td>
-      <td class="p-2 font-mono text-xs text-blue-400">${item.cpp}</td>
-      <td class="p-2 text-xs text-slate-200">${item.count.toLocaleString('pt-BR')}</td>
-      <td class="p-2 text-xs font-semibold text-amber-400">${pct}%</td>
+      <td class="p-1.5 font-mono text-xs text-blue-400">${item.cpp}</td>
+      <td class="p-1.5 text-xs text-slate-300 truncate max-w-[140px]" title="${item.textoBreve}">${item.textoBreve}</td>
+      <td class="p-1.5 font-mono text-xs text-emerald-400">${item.partNumber}</td>
+      <td class="p-1.5 text-xs font-bold text-amber-400 text-right">${item.count.toLocaleString('pt-BR')}</td>
     `;
     container.appendChild(tr);
   });
 }
 
-// QUADRANTE 2: Status de Validade
+// QUADRANTE 2: Proporção (Donut Chart com Layout e Legenda Ajustados)
+function renderChartProporcao() {
+  const elChart = document.getElementById('chartDonutProporcao');
+  if (!elChart || typeof Chart === 'undefined') return;
+
+  const unicosCount = filteredData.filter(d => d.frequencia === 1).length;
+  const dup2Count = filteredData.filter(d => d.frequencia === 2).length;
+  const dup3Count = filteredData.filter(d => d.frequencia >= 3).length;
+
+  if (chartDonutProporcao) chartDonutProporcao.destroy();
+  
+  chartDonutProporcao = new Chart(elChart.getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Únicos (1x)', 'Duplicados (2x)', 'Triplicados ou + (3x+)'],
+      datasets: [{
+        data: [unicosCount, dup2Count, dup3Count],
+        backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: {
+        padding: {
+          top: 0,
+          bottom: 5
+        }
+      },
+      plugins: { 
+        legend: { 
+          position: 'bottom', 
+          labels: { 
+            color: '#94a3b8',
+            font: { size: 10 },
+            boxWidth: 12,
+            padding: 8
+          } 
+        } 
+      },
+      cutout: '70%'
+    }
+  });
+}
+
+// QUADRANTE 3: Status de Validade
 function renderKpiVencimento() {
   const dates = filteredData
     .map(d => parseDateBR(d.validade))
@@ -277,7 +327,7 @@ function renderKpiVencimento() {
   setElementText('kpiVencimentoPct', `${pctRestante}% restante (${pctDecorrente}% decorrido)`);
 }
 
-// QUADRANTE 3: Métricas de Saldo e Consumo
+// QUADRANTE 4: Métricas de Saldo e Consumo
 function renderMétricasContrato() {
   let totalConsumido = 0;
   let totalDisponivel = 0;
@@ -302,36 +352,6 @@ function renderMétricasContrato() {
   setElementText('metricConsumido', `${totalConsumido.toLocaleString('pt-BR')} (${pctConsumido}%)`);
   setElementText('metricSaldo', `${saldoContrato.toLocaleString('pt-BR')} (${pctSaldo}%)`);
   setElementText('metricDisponivel', `${totalDisponivel.toLocaleString('pt-BR')} (${pctDisponivel}%)`);
-}
-
-// QUADRANTE 4: Proporção (Donut Chart)
-function renderChartProporcao() {
-  const elChart = document.getElementById('chartDonutProporcao');
-  if (!elChart || typeof Chart === 'undefined') return;
-
-  const unicosCount = filteredData.filter(d => d.frequencia === 1).length;
-  const dup2Count = filteredData.filter(d => d.frequencia === 2).length;
-  const dup3Count = filteredData.filter(d => d.frequencia >= 3).length;
-
-  if (chartDonutProporcao) chartDonutProporcao.destroy();
-  
-  chartDonutProporcao = new Chart(elChart.getContext('2d'), {
-    type: 'doughnut',
-    data: {
-      labels: ['Únicos (1x)', 'Duplicados (2x)', 'Triplicados ou + (3x+)'],
-      datasets: [{
-        data: [unicosCount, dup2Count, dup3Count],
-        backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
-        borderWidth: 0
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } },
-      cutout: '65%'
-    }
-  });
 }
 
 // TABELA PRINCIPAL
