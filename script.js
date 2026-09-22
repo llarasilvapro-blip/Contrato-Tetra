@@ -77,8 +77,6 @@ function processDataset(json) {
   const parsed = json.map(row => {
     const textoBreve = String(row['Texto breve'] || row['Coluna1'] || '');
     const pn = extractPartNumber(textoBreve);
-    
-    // Obter identificador único (Material ou Centro)
     const matVal = row['Material'] || row['Centro'] || row['CPP'] || 'N/A';
 
     return {
@@ -89,9 +87,12 @@ function processDataset(json) {
       comprador: String(row['Grupo de compradores'] || row['Comprador'] || 'N/A').trim(),
       validade: formatExcelDate(row['Fim da validade'] || row['Validade'] || 'N/A'),
       
-      qtdContratada: Number(row['Quantidade prevista'] || row['Qtd Contratada'] || 0),
-      qtdConsumida: Number(row['Valor solicitado'] || row['Qtd Consumida'] || 0),
-      qtdDisponivel: Number(row['Valor global pendente'] || row['Qtd Disponivel'] || 0)
+      // Colunas comerciais de liberação, pagamento e incoterms
+      estrategiaLiberacao: String(row['Estrat.de liberação'] || row['Estratégia de liberação'] || 'N/A').trim(),
+      condicaoPagamento: String(row['Condições pagamento'] || row['Condição de Pagamento'] || 'N/A').trim(),
+      incoterms: String(row['Incoterms'] || 'N/A').trim(),
+      
+      qtdContratada: Number(row['Quantidade prevista'] || 0)
     };
   });
 
@@ -166,7 +167,7 @@ function updateDashboardUI() {
 
   renderTabelaMateriaisRepetidos();
   renderKpiVencimento();
-  renderMétricasContrato();
+  renderCondicoesComerciais();
   renderChartProporcao();
   renderTable();
 }
@@ -284,24 +285,16 @@ function renderKpiVencimento() {
   setElementText('kpiVencimentoPct', `${pctRestante}% restante (${pctDecorrente}% decorrido)`);
 }
 
-function renderMétricasContrato() {
-  let totalConsumido = 0, totalDisponivel = 0, totalContratado = 0;
-  filteredData.forEach(d => {
-    totalConsumido += d.qtdConsumida;
-    totalDisponivel += d.qtdDisponivel;
-    totalContratado += d.qtdContratada;
-  });
+// QUADRANTE 4: CONDIÇÕES COMERCIAIS E LIBERAÇÃO
+function renderCondicoesComerciais() {
+  const estrategias = [...new Set(filteredData.map(d => d.estrategiaLiberacao).filter(v => v !== 'N/A'))];
+  const condicoes = [...new Set(filteredData.map(d => d.condicaoPagamento).filter(v => v !== 'N/A'))];
+  const fretes = [...new Set(filteredData.map(d => d.incoterms).filter(v => v !== 'N/A'))];
 
-  if (totalContratado === 0) totalContratado = totalConsumido + totalDisponivel;
-  const saldoContrato = totalContratado - totalConsumido;
-
-  const pctConsumido = totalContratado > 0 ? ((totalConsumido / totalContratado) * 100).toFixed(1) : '0.0';
-  const pctSaldo = totalContratado > 0 ? ((saldoContrato / totalContratado) * 100).toFixed(1) : '0.0';
-  const pctDisponivel = totalContratado > 0 ? ((totalDisponivel / totalContratado) * 100).toFixed(1) : '0.0';
-
-  setElementText('metricConsumido', `${totalConsumido.toLocaleString('pt-BR')} (${pctConsumido}%)`);
-  setElementText('metricSaldo', `${saldoContrato.toLocaleString('pt-BR')} (${pctSaldo}%)`);
-  setElementText('metricDisponivel', `${totalDisponivel.toLocaleString('pt-BR')} (${pctDisponivel}%)`);
+  setElementText('metricEstrategiaLiberacao', estrategias.length > 0 ? estrategias.join(', ') : 'N/A');
+  setElementText('metricCondicaoPagamento', condicoes.length > 0 ? condicoes.join(', ') : 'N/A');
+  setElementText('metricIncotermsFrete', fretes.length > 0 ? fretes.join(', ') : 'N/A');
+  setElementText('metricSaldoContrato', 'R$ 22.767.365,43');
 }
 
 function renderTable() {

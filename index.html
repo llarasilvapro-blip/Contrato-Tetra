@@ -116,28 +116,32 @@
       </div>
     </div>
 
-    <!-- QUADRANTE 4: Métricas -->
-    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 h-48 flex flex-col justify-center">
-      <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Métricas de Saldo e Consumo</h3>
-      <div class="grid grid-cols-3 gap-2 mt-2 text-center">
-        <div class="bg-slate-800/60 p-2 rounded-lg">
-          <span class="block text-[10px] text-slate-400 uppercase">Consumido</span>
-          <span id="metricConsumido" class="text-sm font-bold text-amber-400">0 (0%)</span>
+    <!-- QUADRANTE 4: CONDIÇÕES COMERCIAIS E LIBERAÇÃO (REFORMULADO) -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 h-48 flex flex-col justify-between">
+      <div class="flex justify-between items-center">
+        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Condições Comerciais e Liberação</h3>
+        <span class="text-[11px] font-semibold text-slate-400">Saldo: <strong id="metricSaldoContrato" class="text-emerald-400 font-extrabold">R$ 22.767.365,43</strong></span>
+      </div>
+      
+      <div class="grid grid-cols-3 gap-2 text-center my-auto">
+        <div class="bg-slate-800/60 p-2.5 rounded-lg border border-slate-700/50">
+          <span class="block text-[10px] text-slate-400 uppercase font-semibold">Estrat. Liberação</span>
+          <span id="metricEstrategiaLiberacao" class="text-sm font-bold text-amber-400 mt-1 block">--</span>
         </div>
-        <div class="bg-slate-800/60 p-2 rounded-lg">
-          <span class="block text-[10px] text-slate-400 uppercase">Saldo Contrato</span>
-          <span id="metricSaldo" class="text-sm font-bold text-blue-400">0 (0%)</span>
+        <div class="bg-slate-800/60 p-2.5 rounded-lg border border-slate-700/50">
+          <span class="block text-[10px] text-slate-400 uppercase font-semibold">Cond. Pagamento</span>
+          <span id="metricCondicaoPagamento" class="text-sm font-bold text-blue-400 mt-1 block">--</span>
         </div>
-        <div class="bg-slate-800/60 p-2 rounded-lg">
-          <span class="block text-[10px] text-slate-400 uppercase">Disponível</span>
-          <span id="metricDisponivel" class="text-sm font-bold text-emerald-400">0 (0%)</span>
+        <div class="bg-slate-800/60 p-2.5 rounded-lg border border-slate-700/50">
+          <span class="block text-[10px] text-slate-400 uppercase font-semibold">Incoterms (Frete)</span>
+          <span id="metricIncotermsFrete" class="text-sm font-bold text-emerald-400 mt-1 block">--</span>
         </div>
       </div>
     </div>
 
   </section>
 
-  <!-- TABELA PRINCIPAL (COLUNA DUPLICADA CPP REMOVIDA) -->
+  <!-- TABELA PRINCIPAL -->
   <section class="bg-slate-900 border border-slate-800 rounded-xl p-4">
     <div class="mb-4">
       <input type="text" id="searchInput" placeholder="🔍 Buscar por Material, Part Number ou Texto..." class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
@@ -163,7 +167,6 @@
     <div id="tableStatus" class="text-right text-[11px] text-slate-500 mt-2">Exibindo registros...</div>
   </section>
 
-  <!-- PARAMETRO DE CACHE BUSTING PARA FORÇAR ATUALIZAÇÃO DA VERCEL -->
-  <script src="script.js?v=2.0"></script>
+  <script src="script.js?v=3.0"></script>
 </body>
 </html>
