@@ -87,8 +87,6 @@ function processDataset(json) {
       comprador: String(row['Grupo de compradores'] || row['Comprador'] || 'N/A').trim(),
       validade: formatExcelDate(row['Fim da validade'] || row['Validade'] || 'N/A'),
       
-      // Colunas comerciais de liberação, pagamento e incoterms
-      estrategiaLiberacao: String(row['Estrat.de liberação'] || row['Estratégia de liberação'] || 'N/A').trim(),
       condicaoPagamento: String(row['Condições pagamento'] || row['Condição de Pagamento'] || 'N/A').trim(),
       incoterms: String(row['Incoterms'] || 'N/A').trim(),
       
@@ -285,16 +283,14 @@ function renderKpiVencimento() {
   setElementText('kpiVencimentoPct', `${pctRestante}% restante (${pctDecorrente}% decorrido)`);
 }
 
-// QUADRANTE 4: CONDIÇÕES COMERCIAIS E LIBERAÇÃO
+// QUADRANTE 4: CONDIÇÕES COMERCIAIS
 function renderCondicoesComerciais() {
-  const estrategias = [...new Set(filteredData.map(d => d.estrategiaLiberacao).filter(v => v !== 'N/A'))];
   const condicoes = [...new Set(filteredData.map(d => d.condicaoPagamento).filter(v => v !== 'N/A'))];
   const fretes = [...new Set(filteredData.map(d => d.incoterms).filter(v => v !== 'N/A'))];
 
-  setElementText('metricEstrategiaLiberacao', estrategias.length > 0 ? estrategias.join(', ') : 'N/A');
+  setElementText('metricSaldoContrato', 'R$ 22.767.365,43');
   setElementText('metricCondicaoPagamento', condicoes.length > 0 ? condicoes.join(', ') : 'N/A');
   setElementText('metricIncotermsFrete', fretes.length > 0 ? fretes.join(', ') : 'N/A');
-  setElementText('metricSaldoContrato', 'R$ 22.767.365,43');
 }
 
 function renderTable() {

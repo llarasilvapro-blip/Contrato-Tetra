@@ -116,17 +116,16 @@
       </div>
     </div>
 
-    <!-- QUADRANTE 4: CONDIÇÕES COMERCIAIS E LIBERAÇÃO (REFORMULADO) -->
+    <!-- QUADRANTE 4: CONDIÇÕES COMERCIAIS E LIBERAÇÃO (SALDO NO LUGAR DE ESTRAT. LIBERAÇÃO) -->
     <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 h-48 flex flex-col justify-between">
       <div class="flex justify-between items-center">
-        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Condições Comerciais e Liberação</h3>
-        <span class="text-[11px] font-semibold text-slate-400">Saldo: <strong id="metricSaldoContrato" class="text-emerald-400 font-extrabold">R$ 22.767.365,43</strong></span>
+        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Condições Comerciais</h3>
       </div>
       
       <div class="grid grid-cols-3 gap-2 text-center my-auto">
         <div class="bg-slate-800/60 p-2.5 rounded-lg border border-slate-700/50">
-          <span class="block text-[10px] text-slate-400 uppercase font-semibold">Estrat. Liberação</span>
-          <span id="metricEstrategiaLiberacao" class="text-sm font-bold text-amber-400 mt-1 block">--</span>
+          <span class="block text-[10px] text-slate-400 uppercase font-semibold">Saldo do Contrato</span>
+          <span id="metricSaldoContrato" class="text-sm font-extrabold text-emerald-400 mt-1 block">R$ 22.767.365,43</span>
         </div>
         <div class="bg-slate-800/60 p-2.5 rounded-lg border border-slate-700/50">
           <span class="block text-[10px] text-slate-400 uppercase font-semibold">Cond. Pagamento</span>
@@ -134,7 +133,7 @@
         </div>
         <div class="bg-slate-800/60 p-2.5 rounded-lg border border-slate-700/50">
           <span class="block text-[10px] text-slate-400 uppercase font-semibold">Incoterms (Frete)</span>
-          <span id="metricIncotermsFrete" class="text-sm font-bold text-emerald-400 mt-1 block">--</span>
+          <span id="metricIncotermsFrete" class="text-sm font-bold text-amber-400 mt-1 block">--</span>
         </div>
       </div>
     </div>
@@ -167,6 +166,6 @@
     <div id="tableStatus" class="text-right text-[11px] text-slate-500 mt-2">Exibindo registros...</div>
   </section>
 
-  <script src="script.js?v=3.0"></script>
+  <script src="script.js?v=4.0"></script>
 </body>
 </html>
