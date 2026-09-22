@@ -86,7 +86,6 @@ function processDataset(json) {
       partNumber: pn,
       comprador: String(row['Grupo de compradores'] || row['Comprador'] || 'N/A').trim(),
       validade: formatExcelDate(row['Fim da validade'] || row['Validade'] || 'N/A'),
-      
       condicaoPagamento: String(row['Condições pagamento'] || row['Condição de Pagamento'] || 'N/A').trim(),
       incoterms: String(row['Incoterms'] || 'N/A').trim()
     };
@@ -286,8 +285,8 @@ function renderCondicoesComerciais() {
   const condicoes = [...new Set(filteredData.map(d => d.condicaoPagamento).filter(v => v !== 'N/A'))];
   const fretes = [...new Set(filteredData.map(d => d.incoterms).filter(v => v !== 'N/A'))];
 
-  // Se houver dados da planilha carregados, exibe o Saldo Fixo do Contrato R$ 22.767.365,43
-  const saldoExibicao = filteredData.length > 0 ? 'R$ 22.767.365,43' : 'R$ 0,00';
+  // Exibe o Saldo Fixo do Contrato apenas se a planilha tiver sido carregada
+  const saldoExibicao = rawData.length > 0 ? 'R$ 22.767.365,43' : 'R$ 0,00';
 
   setElementText('metricSaldoContrato', saldoExibicao);
   setElementText('metricCondicaoPagamento', condicoes.length > 0 ? condicoes.join(', ') : '--');
